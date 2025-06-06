@@ -12,6 +12,7 @@ This module handles:
 import os
 import json
 import hashlib
+import platform
 # SQLite is used internally by Chroma
 from datetime import datetime
 from typing import List, Dict, Any
@@ -44,11 +45,11 @@ def get_repo_metadata(repo_path: str) -> Dict[str, str]:
     # Get absolute path to normalize across systems
     abs_path = os.path.abspath(repo_path)
     
+    # Initialize with default values
     metadata = {
         "repo_path": abs_path,
         "branch": "unknown",
-        "commit_hash": "unknown",
-        "repo_id": hashlib.md5(abs_path.encode()).hexdigest()  # Unique ID for this repo
+        "commit_hash": "unknown"
     }
     
     try:
@@ -81,6 +82,14 @@ def get_repo_metadata(repo_path: str) -> Dict[str, str]:
             
     except Exception as e:
         print(f"Warning: Could not retrieve git metadata: {e}")
+    
+    # Generate a repo_id that includes the commit hash if available
+    # This ensures embeddings are regenerated when the repository changes
+    id_components = abs_path
+    if metadata["commit_hash"] != "unknown":
+        id_components += metadata["commit_hash"]
+    
+    metadata["repo_id"] = hashlib.md5(id_components.encode()).hexdigest()
         
     return metadata
 
@@ -94,8 +103,19 @@ class CodeEmbedder:
     - Loading embeddings based on repository identity
     - Providing similarity search for RAG
     """
-    # Storage configuration
-    DB_DIR = ".langdoc_db"  # Directory for storing the SQLite database
+    # Storage configuration - follow platform conventions for cache directories
+    @classmethod
+    def _get_cache_dir(cls):
+        """Get the appropriate cache directory based on the platform."""
+        if platform.system() == "Windows":
+            # On Windows, use %LOCALAPPDATA%\langdoc\cache\embeddings
+            base_dir = os.environ.get("LOCALAPPDATA", os.path.expanduser("~"))
+            return os.path.join(base_dir, "langdoc", "cache", "embeddings")
+        else:
+            # On Linux/macOS, use ~/.cache/langdoc/embeddings
+            return os.path.join(os.path.expanduser("~"), ".cache", "langdoc", "embeddings")
+    
+    DB_DIR = _get_cache_dir.__func__()  # Get the cache directory at module load time
     COLLECTION_PREFIX = "langdoc_"  # Prefix for Chroma collections
     
     def __init__(self, model_name: str = "text-embedding-ada-002", chunk_size: int = 1000, 
@@ -125,14 +145,16 @@ class CodeEmbedder:
             separators=["\n\n", "\n", " ", ""]
         )
         
-        # Set and create repository-specific storage path
+        # Set up database path and collection name
         self.repo_path = os.path.abspath(repo_path)
-        self.metadata = get_repo_metadata(repo_path)
-        self._collection_name = self._get_collection_name()
-        self.db_path = os.path.join(self.repo_path, self.DB_DIR)
+        self.metadata = get_repo_metadata(self.repo_path)
         
-        # Ensure the directory exists
-        os.makedirs(self.db_path, exist_ok=True)
+        # Make sure the database directory exists
+        os.makedirs(self.DB_DIR, exist_ok=True)
+        
+        # Use global storage location in user's home directory
+        self.db_path = self.DB_DIR
+        self._collection_name = self._get_collection_name()
         
         # Initialize vector store (to be built or loaded)
         self.vector_store = None
@@ -216,6 +238,9 @@ class CodeEmbedder:
         try:
             # Create a new Chroma instance with our documents
             persist_directory = os.path.join(self.db_path, self._collection_name)
+            
+            # Ensure the directory exists
+            os.makedirs(persist_directory, exist_ok=True)
             
             # Create new vector store
             self.vector_store = Chroma.from_documents(
@@ -376,8 +401,8 @@ class CodeEmbedder:
             metadata = get_repo_metadata(repo_path)
             repo_id = metadata.get("repo_id")
             
-            # Build the path to the database directory
-            db_path = os.path.join(os.path.abspath(repo_path), cls.DB_DIR)
+            # Build the path to the database directory - now using global location
+            db_path = cls.DB_DIR
             collection_dir = os.path.join(db_path, f"{cls.COLLECTION_PREFIX}{repo_id}")
             
             if os.path.exists(collection_dir):
