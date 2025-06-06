@@ -30,14 +30,37 @@ class LangDocContext:
         self.skip_dirs = [d.strip() for d in skip_dirs_str.split(',') if d.strip()]
     
     def init_embedder(self, force_reload: bool = False) -> bool:
-        """Initialize or reload the embedder."""
-        if self.embedder is None or force_reload:
-            self.embedder = CodeEmbedder()
+        """Initialize or reload the embedder with proper repository tracking.
         
-        # Check if index exists and load it
-        index_exists = os.path.exists(os.path.join(self.embedder.FAISS_INDEX_DIR, self.embedder.FAISS_INDEX_NAME + ".faiss"))
-        if index_exists and not force_reload:
-            return self.embedder.load_vector_store()
+        Args:
+            force_reload: If True, recreate the embedder and force reload instead of using cached version
+            
+        Returns:
+            True if vector store was successfully loaded, False otherwise
+        """
+        if self.embedder is None or force_reload:
+            # Initialize with repository path for proper metadata tracking
+            self.embedder = CodeEmbedder(repo_path=self.repo_path)
+        
+        # Check if Chroma database directory exists
+        db_path = os.path.join(self.repo_path, self.embedder.DB_DIR)
+        collection_name = self.embedder._collection_name
+        collection_path = os.path.join(db_path, collection_name)
+        db_exists = os.path.exists(collection_path) and os.path.exists(os.path.join(collection_path, "chroma.sqlite3"))
+        
+        if db_exists:
+            # Try to load with metadata validation first
+            if not force_reload and self.embedder.load_vector_store():
+                click.echo("✅ Successfully loaded existing embeddings for repository.")
+                return True
+                
+            # If metadata validation fails but the index exists, try with force=True
+            if force_reload:
+                click.echo("🔄 Force reloading embeddings...")
+                return self.embedder.load_vector_store(force=True)
+        else:
+            click.echo(f"⚠️ No embeddings found at {collection_path}.")
+            click.echo("Run 'langdoc parse --use-rag' first to generate embeddings.")
         
         return False
 

@@ -1,90 +1,97 @@
 # langdoc
 
-## Project Summary
+## Project Overview: langdoc
 
-The `langdoc` project is a comprehensive tool designed for analyzing and documenting Git repositories using LangChain and RAG. It consists of a CLI interface with various commands to facilitate different functionalities. Here is a breakdown of key components and their functionalities:
+The 'langdoc' project is a comprehensive tool designed to analyze and document Git repositories using LangChain and RAG. It consists of multiple components and files that work together to achieve this functionality.
 
-- **DocGenerator** (class) in `docgen.py`: Responsible for generating code comments and markdown documentation.
-- **CodeEmbedder** (class) in `embedding.py`: Handles creating documents from parsed data using OpenAI embeddings.
-- **Parser** (functions) in `parser.py`: Parses Python files to extract functions, classes, and their docstrings.
-- **LangDocContext** (class) in `context.py`: Manages the context of the LangDoc tool, including initialization from a repository path.
+### Project Summary
+The main functionality of 'langdoc' is to provide a CLI tool that can analyze Git repositories and generate detailed documentation using LangChain and RAG. This tool aims to automate the process of analyzing codebases and extracting meaningful insights for documentation purposes.
 
-The project's main functionality is divided into separate commands within the `cli/commands` directory:
-- **ask_cmd.py**: Allows asking high-level questions about the project using RAG.
-- **doc_cmd.py**: Generates code comments and markdown documentation for a repository.
-- **parse_cmd.py**: Parses the repository, builds, and saves embeddings.
-- **readme_cmd.py**: Generates or updates the README.md file for the project.
+### Key Files and Their Purposes
 
-Each file and component within the project serves a specific purpose in achieving the overall goal of analyzing and documenting Git repositories effectively. The seamless integration of these components ensures a streamlined workflow for users to extract valuable insights and documentation from their codebase.
+1. **docgen.py**
+   - **Purpose:** This file contains the core functionality for generating documentation. It includes instructions for analyzing the project context, writing informative sections, and incorporating specific details about major files and components.
+   - **Key Sections:** 
+     - Instructions for developing a deep understanding of the project.
+     - Guidelines for writing informative sections with proper markdown formatting.
+     - Details on major file descriptions and their purposes.
+     - Project summary guidelines and file structure explanations.
 
-```markdown
+2. **cli/main.py**
+   - **Purpose:** This file defines the CLI functionality for the 'langdoc' tool. It contains the `cli` function that initializes a custom context object for Click's context.
+   - **Key Components:**
+     - `cli` function: Initializes the LangDocContext object for Click's context.
+     - Docstring: Describes 'LangDoc' as a CLI tool for analyzing and documenting Git repositories using LangChain and RAG.
+
+### File Structure Overview
+The file structure of the 'langdoc' project is organized to support the main functionality of analyzing and documenting Git repositories. Specific details about the file structure are provided within the project files themselves.
+
 ## File Structure
 
-The `langdoc` project has the following file structure:
+The 'langdoc' project's file structure is designed to support the analysis and documentation of Git repositories. Below is an overview of the key directories and files within the project:
 
-- `cli/`: Directory containing the command-line interface components
-  - `__init__.py`
-  - `commands/`: Subdirectory with command implementations
-    - `__init__.py`
-    - `ask_cmd.py`: Command for asking high-level questions about the project
-    - `doc_cmd.py`: Command for generating code comments and markdown documentation
-    - `parse_cmd.py`: Command for parsing the repository, building, and saving embeddings
-    - `readme_cmd.py`: Command for generating or updating the README.md file
-  - `context.py`: File containing the LangDocContext class
-  - `main.py`: Main CLI entry point
-  - `utils.py`: Utility functions for the CLI
+- **.langdoc_db/**
+  - Directory containing the LangDoc database files for storing project metadata.
 
-- `cli.py`: Main CLI script
-- `docgen.py`: File with the DocGenerator class and related functions
-- `embedding.py`: File with the CodeEmbedder class and related functions
-- `parser.py`: File with functions for parsing Python files
-- `utils.py`: Utility functions for the project
+- **cli/**
+  - Directory housing the CLI functionality for the 'langdoc' tool.
+  - **__init__.py**
+  - **commands/**
+    - Directory containing CLI command implementations.
+    - **ask_cmd.py**
+    - **doc_cmd.py**
+    - **parse_cmd.py**
+    - **readme_cmd.py**
+  - **context.py**
+  - **main.py**
+  - **utils.py**
 
-Each significant file or directory serves the following purposes:
+- **cli.py**
+  - Main CLI script for executing 'langdoc' commands.
 
-- `docgen.py`: Contains the DocGenerator class for generating code comments and markdown documentation.
-- `embedding.py`: Includes the CodeEmbedder class for creating documents from parsed data.
-- `parser.py`: Provides functions for extracting functions, classes, and docstrings from Python files.
-- `utils.py`: Contains utility functions for loading configuration, getting project names, and other miscellaneous tasks.
-- `context.py`: Defines the LangDocContext class for managing project context.
-- `main.py`: Entry point for the CLI tool, initializing the LangDocContext object.
-- `ask_cmd.py`: Implements the 'ask' command for high-level project questions using RAG.
-- `doc_cmd.py`: Implements the 'doc' command for generating code comments and markdown documentation.
-- `parse_cmd.py`: Implements the 'parse' command for parsing the repository and building embeddings.
-- `readme_cmd.py`: Implements the 'readme' command for generating or updating the README.md file.
-```
+- **docgen.py**
+  - Core functionality for generating project documentation.
+  - Contains functions for analyzing project context and writing informative sections.
 
-### Notable Classes/Functions
+- **embedding.py**
+  - Functionality for extracting repository metadata and embedding code.
+  - **get_repo_metadata** function for retrieving repository metadata.
+  - **CodeEmbedder** class for embedding code snippets.
 
-#### `DocGenerator` (class) in `docgen.py`
-- Responsible for generating code comments and markdown documentation.
+- **parser.py**
+  - Functions for parsing Python files and retrieving file paths.
 
-#### `CodeEmbedder` (class) in `embedding.py`
-- Handles creating documents from parsed data using OpenAI embeddings.
+- **utils.py**
+  - Utility functions for loading configuration, retrieving project name, and accessing configuration values.
 
-#### `LangDocContext` (class) in `context.py`
-- Manages the context of the LangDoc tool, including configuration and repository path initialization.
+The file structure is organized to facilitate the analysis and documentation process, with each file serving a specific purpose in the overall functionality of the 'langdoc' tool.
 
-#### `generate_docstring` (function) in `docgen.py`
-- Generates code comments and markdown documentation.
+## Notable Classes/Functions
 
-#### `create_documents_from_parsed_data` (function) in `embedding.py`
-- Creates documents from parsed data using OpenAI embeddings.
+### `DocGenerator` (class) in `docgen.py`
+- **Purpose:** Responsible for generating documentation for Git repositories using LangChain and RAG.
+- **Key Functions:**
+  - `__init__` (function): Initializes the DocGenerator class.
+  - `generate_docstring` (function): Generates docstrings for the analyzed code.
+  
+### `CodeEmbedder` (class) in `embedding.py`
+- **Purpose:** Handles embedding code snippets into the documentation.
+- **Key Functions:**
+  - `__init__` (function): Initializes the CodeEmbedder class.
+  - `get_repo_metadata` (function): Retrieves metadata information from the repository.
 
-#### `parse_python_file` (function) in `parser.py`
-- Parses a Python file to extract functions, classes, and their docstrings.
+### `LangDocContext` (class) in `context.py`
+- **Purpose:** Defines the context for the LangDoc CLI tool.
+- **Key Functions:**
+  - `__init__` (function): Initializes the LangDocContext class.
+  - `init_from_repo_path` (function): Initializes the context from the repository path.
 
-#### `load_config` (function) in `utils.py`
-- Loads the configuration settings for the LangDoc tool.
-
-#### `get_config_value` (function) in `utils.py`
-- Retrieves a specific configuration value.
-
-#### `get_project_name` (function) in `utils.py`
-- Retrieves the name of the project.
-
-#### `init_from_repo_path` (function) in `context.py`
-- Initializes the LangDoc context object from the repository path.
+### Other Functions:
+- `get_file_paths` (function) in `parser.py`: Retrieves file paths for parsing.
+- `parse_python_file` (function) in `parser.py`: Parses Python files for analysis.
+- `load_config` (function) in `utils.py`: Loads configuration settings for the tool.
+- `get_config_value` (function) in `utils.py`: Retrieves specific configuration values.
+- `get_project_name` (function) in `utils.py`: Retrieves the project name for documentation purposes.
 
 ## Setup and Usage
 

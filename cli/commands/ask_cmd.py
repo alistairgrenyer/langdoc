@@ -44,13 +44,25 @@ def ask(ctx: LangDocContext, question: str, repo_path: str):
     # If still not initialized, try to load vector store directly
     if ctx.embedder is None or ctx.embedder.vector_store is None:
         echo_styled("Trying to load vector store from disk...", "info")
-        embedder = CodeEmbedder()
-        if embedder.load_vector_store(path=os.path.join(repo_path, CodeEmbedder.FAISS_INDEX_DIR)):
+        # Initialize CodeEmbedder with repository path for proper metadata tracking
+        embedder = CodeEmbedder(repo_path=repo_path)
+        
+        # Try loading with repository metadata validation
+        if embedder.load_vector_store():
             ctx.embedder = embedder
-            echo_styled("Vector store loaded successfully.", "success")
+            echo_styled("✅ Vector store loaded successfully.", "success")
         else:
-            echo_styled("Failed to load vector store. Please run 'parse' command first on this repository.", "error")
-            return
+            # Try again with force=True as a fallback if it failed due to metadata mismatch
+            echo_styled("Attempting to load vector store without metadata validation...", "info")
+            if embedder.load_vector_store(force=True):
+                ctx.embedder = embedder
+                echo_styled("⚠️ Vector store loaded with force option.", "warning")
+                echo_styled("Note: It may not match the current repository state.", "warning")
+                echo_styled("Consider running 'parse' or 'readme --use-rag' to update embeddings.", "info")
+            else:
+                echo_styled("❌ Failed to load vector store.", "error")
+                echo_styled("Please run 'parse' or 'readme --use-rag' command first on this repository.", "error")
+                return
     
     # Double-check that we have a working embedder with vector store
     if ctx.embedder.vector_store is None:

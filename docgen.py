@@ -245,3 +245,61 @@ class DocGenerator:
         except Exception as e:
             print(f"Error generating README section '{section_title}': {e}")
             return None
+            
+    def generate_with_rag(self, query: str, retrieved_docs: list, context_instruction: str) -> Optional[str]:
+        """Generate content using RAG (Retrieval Augmented Generation) approach.
+        
+        Args:
+            query: The query to answer
+            retrieved_docs: List of document objects retrieved from vector store
+            context_instruction: Instructions on how to use the retrieved documents
+            
+        Returns:
+            Generated content based on the retrieved documents, or None if generation failed
+        """
+        if not self.llm:
+            print("Cannot generate with RAG: LLM not available.")
+            return None
+        
+        # Create RAG prompt template
+        rag_prompt = ChatPromptTemplate.from_template(
+            """You are a technical documentation expert focused on explaining code structure and functionality.
+            
+            Based on the following retrieved code chunks, respond to this query:
+            {query}
+            
+            {context_instruction}
+            
+            Retrieved code chunks:
+            {chunks}
+            
+            Focus on being accurate, comprehensive, and clear in your response.
+            Format your response in clean markdown that can be directly incorporated into documentation.
+            """
+        )
+        
+        # Process retrieved documents
+        if not retrieved_docs or len(retrieved_docs) == 0:
+            return "No relevant code context was found to answer this query."
+        
+        # Extract content from retrieved documents
+        chunks_text = []
+        for i, doc in enumerate(retrieved_docs):
+            source = doc.metadata.get("source", "Unknown source")
+            file_path = doc.metadata.get("file_path", "Unknown file")
+            chunks_text.append(f"Chunk {i+1} from {source or file_path}:\n```python\n{doc.page_content}\n```\n")
+        
+        chunks_combined = "\n".join(chunks_text)
+        
+        # Create and run the chain
+        chain = rag_prompt | self.llm | self.output_parser
+        try:
+            result = chain.invoke({
+                "query": query,
+                "context_instruction": context_instruction,
+                "chunks": chunks_combined
+            })
+            return result
+        except Exception as e:
+            print(f"Error generating RAG content: {e}")
+            return None
