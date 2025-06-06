@@ -1,0 +1,3 @@
+"""
+LangDoc CLI Package
+"""
