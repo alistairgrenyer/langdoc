@@ -238,18 +238,24 @@ def readme(repo_path: str, output_file: str, use_rag: bool):
     click.echo("Generating Project Summary section...")
     summary_section_content = "A tool to analyze and document Git repositories using LangChain and RAG." # Default/placeholder
     if DOCGEN_OPENAI_API_KEY:
-        generated_summary = doc_generator.generate_readme_section(
+        summary_section_content = doc_generator.generate_readme_section(
             section_title="Project Summary",
             project_name=project_name,
             file_structure=file_structure_md,
             key_elements_summary=key_elements_summary,
             file_descriptions=file_descriptions
         )
-        if generated_summary and generated_summary.lower().strip() != 'no change needed':
-            summary_section_content = generated_summary
-    readme_content += f"## Project Summary\n{summary_section_content}\n\n"
+        if summary_section_content and summary_section_content.lower().strip() != 'no change needed':
+            # Let the LLM handle the heading
+            readme_content += f"{summary_section_content}\n\n"
+        else:
+            # Fallback with added heading
+            readme_content += "## Project Summary\nA tool to analyze and document Git repositories using LangChain and RAG.\n\n"
+    else:
+        # Basic summary when no API key
+        readme_content += "## Project Summary\nA tool to analyze and document Git repositories using LangChain and RAG.\n\n"
 
-    # File Structure Section with enhanced descriptions
+    # File Structure Section
     click.echo("Generating File Structure section...")
     if DOCGEN_OPENAI_API_KEY:
         file_structure_content = doc_generator.generate_readme_section(
@@ -260,15 +266,16 @@ def readme(repo_path: str, output_file: str, use_rag: bool):
             file_descriptions=file_descriptions
         )
         if file_structure_content and file_structure_content.lower().strip() != 'no change needed':
-            readme_content += f"## File Structure\n{file_structure_content}\n\n"
+            # Let the LLM handle the heading
+            readme_content += f"{file_structure_content}\n\n"
         else:
-            # Fallback to basic file structure
+            # Fallback with added heading
             readme_content += f"## File Structure\n\n```\n{file_structure_md}\n```\n\n"
     else:
         # Basic file structure when no API key
         readme_content += f"## File Structure\n\n```\n{file_structure_md}\n```\n\n"
 
-    # Key Classes/Functions Section with enhanced descriptions
+    # Key Classes/Functions Section
     click.echo("Generating Notable Classes/Functions section...")
     if DOCGEN_OPENAI_API_KEY:
         notable_elements_content = doc_generator.generate_readme_section(
@@ -279,9 +286,10 @@ def readme(repo_path: str, output_file: str, use_rag: bool):
             file_descriptions=file_descriptions
         )
         if notable_elements_content and notable_elements_content.lower().strip() != 'no change needed':
-            readme_content += f"## Notable Classes/Functions\n{notable_elements_content}\n\n"
+            # Let the LLM handle the heading
+            readme_content += f"{notable_elements_content}\n\n"
         else:
-            # Fallback to basic listing
+            # Fallback with added heading
             readme_content += f"## Notable Classes/Functions\n\n{key_elements_summary}\n\n"
     else:
         # Basic listing when no API key
