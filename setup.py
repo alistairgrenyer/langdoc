@@ -20,7 +20,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "langdoc=langdoc.cli:cli",
+            "langdoc=langdoc.cli.main:cli",
         ],
     },
     python_requires=">=3.8",

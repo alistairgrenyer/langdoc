@@ -121,7 +121,7 @@ def readme(ctx: LangDocContext, repo_path: str, output_file: str, use_rag: bool)
             query = f"file:{pattern} type:function"
             try:
                 # For each file, get a brief description using RAG
-                results = active_embedder.search(query, k=3)
+                results = active_embedder.similarity_search(query, k=3)
                 for doc in results:
                     filepath = doc.metadata.get('filepath', '')
                     if filepath and filepath not in [f['file'] for f in found_files]:

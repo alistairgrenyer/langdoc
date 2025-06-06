@@ -1,97 +1,74 @@
 # langdoc
 
-## Project Overview: langdoc
+## Project Summary
 
-The 'langdoc' project is a comprehensive tool designed to analyze and document Git repositories using LangChain and RAG. It consists of multiple components and files that work together to achieve this functionality.
+The `langdoc` project is a Python codebase designed to provide language documentation capabilities. It consists of the following key components:
 
-### Project Summary
-The main functionality of 'langdoc' is to provide a CLI tool that can analyze Git repositories and generate detailed documentation using LangChain and RAG. This tool aims to automate the process of analyzing codebases and extracting meaningful insights for documentation purposes.
+- `LangDocContext` (class) in `context.py` for managing the context of language documentation
+- `cli` (function) in `main.py` for command-line interface functionality
+- `echo_styled` (function) in `utils.py` for styled output in the CLI
+- `get_parsed_files` (function) in `utils.py` for parsing files
+- `validate_api_key` (function) in `utils.py` for validating API keys
+- `ask` (function) in `ask_cmd.py` for asking questions
+- `doc` (function) in `doc_cmd.py` for documentation purposes
 
-### Key Files and Their Purposes
-
-1. **docgen.py**
-   - **Purpose:** This file contains the core functionality for generating documentation. It includes instructions for analyzing the project context, writing informative sections, and incorporating specific details about major files and components.
-   - **Key Sections:** 
-     - Instructions for developing a deep understanding of the project.
-     - Guidelines for writing informative sections with proper markdown formatting.
-     - Details on major file descriptions and their purposes.
-     - Project summary guidelines and file structure explanations.
-
-2. **cli/main.py**
-   - **Purpose:** This file defines the CLI functionality for the 'langdoc' tool. It contains the `cli` function that initializes a custom context object for Click's context.
-   - **Key Components:**
-     - `cli` function: Initializes the LangDocContext object for Click's context.
-     - Docstring: Describes 'LangDoc' as a CLI tool for analyzing and documenting Git repositories using LangChain and RAG.
-
-### File Structure Overview
-The file structure of the 'langdoc' project is organized to support the main functionality of analyzing and documenting Git repositories. Specific details about the file structure are provided within the project files themselves.
+The project structure includes directories such as `cli`, `core`, and `utils`, each containing relevant Python files for different functionalities. The `langdoc` project aims to streamline the process of language documentation through its CLI and core functionalities.
 
 ## File Structure
 
-The 'langdoc' project's file structure is designed to support the analysis and documentation of Git repositories. Below is an overview of the key directories and files within the project:
+```
+langdoc/
+├── .langdoc_db/
+│   └── langdoc_acf8549fe385693015732ed0b79468cd/
+│       └── 73a42ec6-e8a4-4e6e-a2aa-ccf5bcc61242/
+├── langdoc/
+│   ├── __init__.py
+│   ├── cli/
+│   │   ├── __init__.py
+│   │   ├── commands/
+│   │   │         └── ... (too deep)
+│   │   ├── context.py
+│   │   ├── main.py
+│   │   └── utils.py
+│   ├── cli.py
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── docgen.py
+│   │   ├── embedding.py
+│   │   └── parser.py
+│   └── utils/
+│       ├── __init__.py
+│       └── common.py
+├── langdoc.egg-info/
+└── setup.py
+```
 
-- **.langdoc_db/**
-  - Directory containing the LangDoc database files for storing project metadata.
+The `langdoc` project is structured as follows:
 
-- **cli/**
-  - Directory housing the CLI functionality for the 'langdoc' tool.
-  - **__init__.py**
-  - **commands/**
-    - Directory containing CLI command implementations.
-    - **ask_cmd.py**
-    - **doc_cmd.py**
-    - **parse_cmd.py**
-    - **readme_cmd.py**
-  - **context.py**
-  - **main.py**
-  - **utils.py**
+- The `.langdoc_db` directory contains internal database files for the project.
+- The `langdoc` directory is the main package containing the following modules:
+  - `cli`: Contains command-line interface related files.
+  - `core`: Contains core functionality modules like document generation, embedding, and parsing.
+  - `utils`: Contains utility functions used throughout the project.
 
-- **cli.py**
-  - Main CLI script for executing 'langdoc' commands.
+Key files include `context.py`, `main.py`, `utils.py`, `docgen.py`, `embedding.py`, `parser.py`, and `common.py`.
 
-- **docgen.py**
-  - Core functionality for generating project documentation.
-  - Contains functions for analyzing project context and writing informative sections.
-
-- **embedding.py**
-  - Functionality for extracting repository metadata and embedding code.
-  - **get_repo_metadata** function for retrieving repository metadata.
-  - **CodeEmbedder** class for embedding code snippets.
-
-- **parser.py**
-  - Functions for parsing Python files and retrieving file paths.
-
-- **utils.py**
-  - Utility functions for loading configuration, retrieving project name, and accessing configuration values.
-
-The file structure is organized to facilitate the analysis and documentation process, with each file serving a specific purpose in the overall functionality of the 'langdoc' tool.
+The project also includes `langdoc.egg-info` and `setup.py` for packaging and distribution purposes.
 
 ## Notable Classes/Functions
 
-### `DocGenerator` (class) in `docgen.py`
-- **Purpose:** Responsible for generating documentation for Git repositories using LangChain and RAG.
-- **Key Functions:**
-  - `__init__` (function): Initializes the DocGenerator class.
-  - `generate_docstring` (function): Generates docstrings for the analyzed code.
-  
-### `CodeEmbedder` (class) in `embedding.py`
-- **Purpose:** Handles embedding code snippets into the documentation.
-- **Key Functions:**
-  - `__init__` (function): Initializes the CodeEmbedder class.
-  - `get_repo_metadata` (function): Retrieves metadata information from the repository.
+### Classes:
+- `LangDocContext` (in `context.py`): Class responsible for managing the context of the LangDoc application.
 
-### `LangDocContext` (class) in `context.py`
-- **Purpose:** Defines the context for the LangDoc CLI tool.
-- **Key Functions:**
-  - `__init__` (function): Initializes the LangDocContext class.
-  - `init_from_repo_path` (function): Initializes the context from the repository path.
-
-### Other Functions:
-- `get_file_paths` (function) in `parser.py`: Retrieves file paths for parsing.
-- `parse_python_file` (function) in `parser.py`: Parses Python files for analysis.
-- `load_config` (function) in `utils.py`: Loads configuration settings for the tool.
-- `get_config_value` (function) in `utils.py`: Retrieves specific configuration values.
-- `get_project_name` (function) in `utils.py`: Retrieves the project name for documentation purposes.
+### Functions:
+- `__init__` (in `context.py`): Function to initialize the LangDocContext class.
+- `init_from_repo_path` (in `context.py`): Function to initialize the context from a repository path.
+- `cli` (in `main.py`): Function to handle the command-line interface of LangDoc.
+- `echo_styled` (in `utils.py`): Function to echo styled output to the console.
+- `get_parsed_files` (in `utils.py`): Function to retrieve parsed files.
+- `validate_api_key` (in `utils.py`): Function to validate an API key.
+- `ask` (in `ask_cmd.py`): Function to prompt the user for input.
+- `doc` (in `doc_cmd.py`): Function to handle documentation commands.
 
 ## Setup and Usage
 
@@ -123,17 +100,17 @@ Once setup, you can use the LangDoc CLI:
 
 -   **Parse the repository and build embeddings:**
     ```bash
-    python cli.py parse --path /path/to/your/repo
+    langdoc parse --path /path/to/your/repo
     ```
 -   **Generate documentation:**
     ```bash
-    python cli.py doc --path /path/to/your/repo --output-dir project_docs
+    langdoc doc --path /path/to/your/repo --output-dir project_docs
     ```
 -   **Ask questions about the code:**
     ```bash
-    python cli.py ask "How does the authentication work?" --path /path/to/your/repo
+    langdoc ask "How does the authentication work?" --path /path/to/your/repo
     ```
 -   **Refresh this README:**
     ```bash
-    python cli.py readme --path /path/to/your/repo
+    langdoc readme --path /path/to/your/repo
     ```
