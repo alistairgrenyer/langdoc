@@ -140,22 +140,3 @@ def parse_python_file(file_path: str) -> Dict[str, Any]:
         "content": content, # Full file content for context if needed
         "definitions": definitions
     }
-
-if __name__ == '__main__':
-    # Example usage:
-    sample_repo_path = '.' # Current directory, adjust as needed
-    py_files = get_file_paths(sample_repo_path, skip_dirs=['.git', 'venv', '__pycache__', 'docs'])
-    print(f"Found {len(py_files)} Python files.")
-
-    for py_file in py_files:
-        if os.path.basename(py_file) not in [os.path.basename(__file__), 'cli.py', 'embedding.py', 'docgen.py', 'utils.py']:
-            print(f"\nParsing: {py_file}")
-            parsed_data = parse_python_file(py_file)
-            if "error" in parsed_data:
-                print(f"  Error: {parsed_data['error']}")
-            else:
-                for definition in parsed_data['definitions']:
-                    print(f"  - {definition['type'].capitalize()} {definition['name']} (lines {definition['lineno']}-{definition['end_lineno']})")
-                    # print(f"    Docstring: {definition['docstring']}")
-                    # print(f"    Code:\n{definition['code']}\n")
-

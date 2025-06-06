@@ -162,7 +162,8 @@ def doc(repo_path: str, output_dir: str, update_docstrings: bool):
 @cli.command()
 @click.option('--path', 'repo_path', default='.', help='Path to the Git repository.', type=click.Path(exists=True, file_okay=False, dir_okay=True, readable=True), show_default=True)
 @click.option('--output-file', default='README.md', help='File to save the generated README.', type=click.Path(dir_okay=False, writable=True), show_default=True)
-def readme(repo_path: str, output_file: str):
+@click.option('--use-rag', is_flag=True, help='Use RAG to enhance documentation with detailed file and function descriptions.')
+def readme(repo_path: str, output_file: str, use_rag: bool):
     """Generate or update the README.md file."""
     click.echo(click.style(f"--- Generating README for: {os.path.abspath(repo_path)} ---", bold=True))
 
@@ -191,6 +192,46 @@ def readme(repo_path: str, output_file: str):
                 key_elements_summary_parts.append(f"- `{definition['name']}` ({definition['type']}) in `{os.path.basename(pf_data['file_path'])}`")
     key_elements_summary = "\n".join(key_elements_summary_parts) if key_elements_summary_parts else "No key elements automatically extracted."
 
+    # Get detailed file descriptions using RAG if requested
+    file_descriptions = "No detailed file descriptions available."
+    global global_embedder
+    
+    if use_rag and EMBED_OPENAI_API_KEY:
+        click.echo("Using RAG to retrieve detailed file descriptions...")
+        try:
+            # Check if we already have a global embedder or need to create one
+            if not global_embedder:
+                click.echo("Building embeddings for RAG...")
+                embedder = CodeEmbedder(model_name=get_config_value(config, 'embed_model', 'text-embedding-ada-002'))
+                # Use the parsed files we already have to create documents
+                documents_to_embed = []
+                if parsed_files_for_readme:
+                    documents_to_embed = embedder.create_documents_from_parsed_data(parsed_files_for_readme)
+                    if documents_to_embed:
+                        click.echo(f"Building vector store with {len(documents_to_embed)} documents...")
+                        embedder.build_vector_store(documents_to_embed)
+                        global_embedder = embedder
+            
+            if global_embedder and global_embedder.vector_store:
+                # Generate queries for key files to get detailed descriptions
+                file_desc_parts = []
+                for file_path in [f['file_path'] for f in parsed_files_for_readme]:
+                    file_name = os.path.basename(file_path)
+                    query = f"What is the purpose and main functionality of {file_name}?"
+                    docs = global_embedder.vector_store.similarity_search(query, k=3)
+                    if docs:
+                        content_summary = " ".join([doc.page_content for doc in docs[:2]])
+                        file_desc_parts.append(f"### {file_name}\n{content_summary[:500]}...")
+                
+                if file_desc_parts:
+                    file_descriptions = "\n\n".join(file_desc_parts)
+                    click.echo(click.style(f"Retrieved detailed descriptions for {len(file_desc_parts)} files using RAG", fg='green'))
+        except Exception as e:
+            click.echo(click.style(f"Error using RAG for file descriptions: {e}", fg='yellow'))
+            click.echo("Falling back to basic README generation...")
+    elif use_rag and not EMBED_OPENAI_API_KEY:
+        click.echo(click.style("RAG requested but OPENAI_API_KEY not available for embeddings", fg='yellow'))
+
     readme_content = f"# {project_name}\n\n"
     
     # Project Summary Section
@@ -201,17 +242,50 @@ def readme(repo_path: str, output_file: str):
             section_title="Project Summary",
             project_name=project_name,
             file_structure=file_structure_md,
-            key_elements_summary=key_elements_summary
+            key_elements_summary=key_elements_summary,
+            file_descriptions=file_descriptions
         )
         if generated_summary and generated_summary.lower().strip() != 'no change needed':
             summary_section_content = generated_summary
     readme_content += f"## Project Summary\n{summary_section_content}\n\n"
 
-    # File Structure Section
-    readme_content += f"## File Structure\n\n```\n{file_structure_md}\n```\n\n"
+    # File Structure Section with enhanced descriptions
+    click.echo("Generating File Structure section...")
+    if DOCGEN_OPENAI_API_KEY:
+        file_structure_content = doc_generator.generate_readme_section(
+            section_title="File Structure",
+            project_name=project_name,
+            file_structure=file_structure_md,
+            key_elements_summary=key_elements_summary,
+            file_descriptions=file_descriptions
+        )
+        if file_structure_content and file_structure_content.lower().strip() != 'no change needed':
+            readme_content += f"## File Structure\n{file_structure_content}\n\n"
+        else:
+            # Fallback to basic file structure
+            readme_content += f"## File Structure\n\n```\n{file_structure_md}\n```\n\n"
+    else:
+        # Basic file structure when no API key
+        readme_content += f"## File Structure\n\n```\n{file_structure_md}\n```\n\n"
 
-    # Key Classes/Functions Section
-    readme_content += f"## Notable Classes/Functions\n\n{key_elements_summary}\n\n"
+    # Key Classes/Functions Section with enhanced descriptions
+    click.echo("Generating Notable Classes/Functions section...")
+    if DOCGEN_OPENAI_API_KEY:
+        notable_elements_content = doc_generator.generate_readme_section(
+            section_title="Notable Classes/Functions",
+            project_name=project_name,
+            file_structure=file_structure_md,
+            key_elements_summary=key_elements_summary,
+            file_descriptions=file_descriptions
+        )
+        if notable_elements_content and notable_elements_content.lower().strip() != 'no change needed':
+            readme_content += f"## Notable Classes/Functions\n{notable_elements_content}\n\n"
+        else:
+            # Fallback to basic listing
+            readme_content += f"## Notable Classes/Functions\n\n{key_elements_summary}\n\n"
+    else:
+        # Basic listing when no API key
+        readme_content += f"## Notable Classes/Functions\n\n{key_elements_summary}\n\n"
 
     # Setup Instructions Section
     click.echo("Generating Setup Instructions section...")

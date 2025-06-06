@@ -18,25 +18,80 @@ class DocGenerator:
         if OPENAI_API_KEY:
             self.llm = ChatOpenAI(model=model_name, openai_api_key=OPENAI_API_KEY, temperature=0.2)
             self.docstring_prompt = ChatPromptTemplate.from_template(
-                "Generate a concise and informative docstring for the following {code_type} named '{code_name}'. "
-                "The code is:\n\n```python\n{code_content}```\n\nConsider its purpose, arguments (if any), and what it returns (if applicable). "
-                "The existing docstring is: '{existing_docstring}'. "
-                "If the existing docstring is adequate, respond with 'SKIP'. Otherwise, provide the new docstring only, without any preamble."
+                """Analyze the following {code_type} named '{code_name}' and generate a professional docstring for it.
+
+                ```python
+                {code_content}
+                ```
+                
+                INSTRUCTIONS:
+                1. Create a clear, concise, and informative docstring that follows PEP 257 standards
+                2. Document the {code_type}'s purpose, functionality, and behavior
+                3. For functions/methods: document parameters, return values, raised exceptions, and usage examples when appropriate
+                4. For classes: document behavior, key methods, attributes, and usage patterns
+                5. Use the appropriate docstring style (triple quotes)
+                6. Focus on technical accuracy and completeness
+                7. If code has type hints, ensure docstring aligns with them
+                
+                The existing docstring is: '{existing_docstring}'
+                
+                If the existing docstring is already adequate (covers purpose, parameters, returns values as needed), respond with 'SKIP'.
+                Otherwise, provide ONLY the new docstring text without any additional explanation or markdown formatting.
+                """
             )
             self.module_summary_prompt = ChatPromptTemplate.from_template(
-                "Provide a brief summary for a Python module located at '{file_path}'. "
-                "The module contains the following functions and classes: {definitions_summary}. "
-                "Focus on the overall purpose and key functionalities of the module. "
-                "Respond with the markdown summary only."
+                """Generate a comprehensive module documentation in markdown format for a Python module located at '{file_path}'.
+                
+                The module contains the following functions and classes: 
+                {definitions_summary}
+                
+                INSTRUCTIONS:
+                1. Create a well-structured markdown document that explains the module's purpose, functionality, and organization
+                2. Start with a clear module overview explaining what problem it solves
+                3. Document the main components (classes, functions) with their relationships and dependencies
+                4. Highlight key usage patterns and examples where appropriate
+                5. Use proper markdown formatting with headers, lists, code blocks, and emphasis
+                6. Make the documentation useful for both new and experienced developers
+                7. Focus on explaining the module's role within the larger project context
+                
+                Respond with a professional markdown document, structured with appropriate headings and sections.
+                """
             )
             self.readme_section_prompt = ChatPromptTemplate.from_template(
-                "Given the following information about a project, generate the '{section_title}' section for a README.md file.\n\n"
-                "Project Name: {project_name}\n"
-                "File Structure Overview:\n{file_structure}\n\n"
-                "Key Functions/Classes Summary:\n{key_elements_summary}\n\n"
-                "Existing {section_title} Content (if any):\n{existing_section_content}\n\n"
-                "Generate a concise and informative {section_title} section. If the existing content is good, you can suggest minor improvements or state 'No change needed'."
-                "Respond with the markdown for the section only."
+                """You are an expert technical documentation writer tasked with creating a comprehensive README.md section for a codebase.
+                
+                Given the following information, craft a high-quality '{section_title}' section for a README.md file:  
+                
+                Project Name: {project_name}
+                
+                File Structure Overview:
+{file_structure}
+
+                
+                Key Functions/Classes Summary:
+{key_elements_summary}
+
+                
+                Detailed File Descriptions:
+{file_descriptions}
+
+                
+                Existing {section_title} Content (if any):
+{existing_section_content}
+
+                
+                INSTRUCTIONS:
+                1. Analyze the provided context to develop a deep understanding of the project's purpose, architecture, and functionality.
+                2. Write an informative, well-structured {section_title} section using proper markdown formatting.
+                3. Incorporate specific details about what each major file and component does based on the detailed file descriptions.
+                4. For 'Project Summary' sections, clearly articulate the value proposition, key features, and how the components work together.
+                5. For file structure sections, don't just list files - explain what each significant file or directory contains and its purpose.
+                6. Use clear, concise language appropriate for software documentation.
+                7. Include relevant subsections, bullet points, and code examples where appropriate.
+                8. If the existing content adequately covers all this information, respond with 'No change needed'.
+                
+                Respond with ONLY the markdown content for the section, without preamble or explanation.
+                """
             )
             self.output_parser = StrOutputParser()
         else:
@@ -158,7 +213,20 @@ class DocGenerator:
             print(f"Error generating module markdown for {file_path}: {e}")
             return None
 
-    def generate_readme_section(self, section_title: str, project_name: str, file_structure: str, key_elements_summary: str, existing_section_content: str = "") -> Optional[str]:
+    def generate_readme_section(self, section_title: str, project_name: str, file_structure: str, key_elements_summary: str, file_descriptions: str = "No detailed file descriptions available.", existing_section_content: str = "") -> Optional[str]:
+        """Generate a well-structured README section using the available project information.
+        
+        Args:
+            section_title: The title for the section (e.g., "Project Summary")
+            project_name: The name of the project
+            file_structure: Markdown representation of the file structure
+            key_elements_summary: Summary of key functions and classes
+            file_descriptions: Detailed descriptions of files obtained via RAG
+            existing_section_content: Existing content for this section (if any)
+            
+        Returns:
+            Generated markdown content for the section, or None if generation failed
+        """
         if not self.llm:
             print(f"Cannot generate README section '{section_title}': LLM not available.")
             return None
@@ -170,75 +238,10 @@ class DocGenerator:
                 "project_name": project_name,
                 "file_structure": file_structure,
                 "key_elements_summary": key_elements_summary,
+                "file_descriptions": file_descriptions,
                 "existing_section_content": existing_section_content
             })
             return content
         except Exception as e:
             print(f"Error generating README section '{section_title}': {e}")
             return None
-
-# Example Usage (for testing this module independently)
-if __name__ == '__main__':
-    from parser import parse_python_file # Assuming parser.py is in the same directory
-
-    if not OPENAI_API_KEY:
-        print("Skipping docgen.py example: OPENAI_API_KEY not set.")
-    else:
-        print("Running docgen.py example...")
-        # Create a dummy Python file for testing
-        dummy_file_content = """
-def greet(name):
-    # No docstring here
-    return f"Hello, {name}"
-
-class Calculator:
-    \"\"\"A simple calculator class.\"\"\"
-    def add(self, a, b):
-        # Missing docstring for method
-        return a + b
-"""
-        dummy_file_path = "_temp_dummy_module.py"
-        with open(dummy_file_path, "w") as f:
-            f.write(dummy_file_content)
-
-        parsed_info = parse_python_file(dummy_file_path)
-        doc_gen = DocGenerator()
-
-        if parsed_info and "error" not in parsed_info:
-            # Test docstring generation (will print, not modify file in this example)
-            print("\n--- Testing Docstring Generation ---")
-            doc_gen.update_file_with_docstrings(dummy_file_path, parsed_info)
-
-            # Test module markdown generation
-            print("\n--- Testing Module Markdown Generation ---")
-            md_path = doc_gen.generate_module_markdown(parsed_info, output_dir='temp_docs')
-            if md_path and os.path.exists(md_path):
-                print(f"Module markdown generated at: {md_path}")
-                # Clean up dummy markdown dir
-                # os.remove(md_path)
-                # os.rmdir('temp_docs')
-            else:
-                print("Failed to generate module markdown or file not found.")
-            
-            # Test README section generation
-            print("\n--- Testing README Section Generation ---")
-            project_fs = "- cli.py\n- parser.py\n- embedding.py\n- docgen.py"
-            key_elements = "- `parse()` in cli.py: Parses the repo.\n- `CodeEmbedder` in embedding.py: Handles embeddings."
-            summary_section = doc_gen.generate_readme_section(
-                section_title="Project Summary",
-                project_name="LangDoc Test",
-                file_structure=project_fs,
-                key_elements_summary=key_elements,
-                existing_section_content="This is an old summary."
-            )
-            if summary_section:
-                print(f"Generated 'Project Summary' section:\n{summary_section}")
-
-        # Clean up dummy file
-        if os.path.exists(dummy_file_path):
-            os.remove(dummy_file_path)
-        if os.path.exists('temp_docs'):
-            if md_path and os.path.exists(md_path):
-                os.remove(md_path)
-            os.rmdir('temp_docs')
-

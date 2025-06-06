@@ -3,48 +3,111 @@
 ## Project Summary
 ## Project Summary
 
-langdoc is a Python project that provides tools for generating documentation and embedding code. The project consists of several key functions and classes:
+The **langdoc** project is a comprehensive tool designed to analyze and document Git repositories using LangChain and RAG. It consists of several key components that work together to achieve this goal:
 
-- `cli`: A function in `cli.py` that serves as the command-line interface.
-- `get_common_options`: A function in `cli.py` that retrieves common options for the CLI.
-- `_get_parsed_files`: A function in `cli.py` that parses files for documentation generation.
-- `DocGenerator`: A class in `docgen.py` responsible for generating docstrings.
-- `generate_docstring`: A function in `docgen.py` that generates docstrings.
-- `CodeEmbedder`: A class in `embedding.py` for embedding code.
-- `create_documents_from_parsed_data`: A function in `embedding.py` that creates documents from parsed data.
-- `get_file_paths`: A function in `parser.py` that retrieves file paths.
-- `parse_python_file`: A function in `parser.py` that parses Python files.
-- `load_config`: A function in `utils.py` that loads configuration settings.
-- `get_config_value`: A function in `utils.py` that retrieves a specific configuration value.
-- `get_project_name`: A function in `utils.py` that gets the project name.
+### Key Functions/Classes Summary:
+- `cli` (function) in `cli.py`: Handles the command-line interface for the tool.
+- `DocGenerator` (class) in `docgen.py`: Generates code comments and markdown documentation.
+- `CodeEmbedder` (class) in `embedding.py`: Embeds code snippets into documents using OpenAI embeddings.
+- `parse_python_file` (function) in `parser.py`: Parses Python files to extract functions, classes, and their docstrings.
+- `load_config` (function) in `utils.py`: Loads configuration settings for the tool.
+
+### File Structure Overview:
+- **cli.py**: Contains the CLI functionality for the tool.
+- **docgen.py**: Implements the `DocGenerator` class for generating documentation.
+- **embedding.py**: Includes the `CodeEmbedder` class for embedding code snippets.
+- **parser.py**: Provides functions for parsing Python files.
+- **utils.py**: Contains utility functions for loading configurations and common options.
+
+Each component plays a crucial role in the overall functionality of the **langdoc** tool, working together to analyze and document code repositories effectively.
 
 ## File Structure
+### File Structure
 
-```
-langdoc/
-├── cli.py
-├── docgen.py
-├── embedding.py
-├── parser.py
-└── utils.py
-```
+The `langdoc` project consists of the following files:
+
+- `cli.py`: Contains functions related to the command-line interface of the tool.
+- `docgen.py`: Includes functions for generating code comments and markdown documentation.
+- `embedding.py`: Defines a class for embedding text using OpenAI's model and text splitting techniques.
+- `parser.py`: Provides functions for parsing Python files and extracting functions, classes, and their docstrings.
+- `utils.py`: Contains utility functions for loading configuration, getting common options, and retrieving project names.
+
+Each file serves a specific purpose in the overall functionality of the `langdoc` project.
 
 ## Notable Classes/Functions
+### Notable Classes/Functions
 
-- `cli` (function) in `cli.py`
-- `get_common_options` (function) in `cli.py`
-- `_get_parsed_files` (function) in `cli.py`
-- `DocGenerator` (class) in `docgen.py`
-- `__init__` (function) in `docgen.py`
-- `generate_docstring` (function) in `docgen.py`
-- `CodeEmbedder` (class) in `embedding.py`
-- `__init__` (function) in `embedding.py`
-- `create_documents_from_parsed_data` (function) in `embedding.py`
-- `get_file_paths` (function) in `parser.py`
-- `parse_python_file` (function) in `parser.py`
-- `load_config` (function) in `utils.py`
-- `get_config_value` (function) in `utils.py`
-- `get_project_name` (function) in `utils.py`
+#### `cli.py`
+- **cli** (function)
+  - Description: A CLI tool to analyze and document Git repositories using LangChain and RAG.
+  - Code: 
+    ```python
+    def cli(ctx):
+        ctx.ensure_object(dict)
+        # Load config once and pass it around if needed, or load per command
+        # For simplicity, we'll load config within commands that need it.
+        pass
+    ```
+
+#### `docgen.py`
+- **DocGenerator** (class)
+  - Description: Generates code comments and markdown documentation.
+  - Code: 
+    ```python
+    class DocGenerator:
+        def __init__(self):
+            pass
+        
+        def generate_docstring(self):
+            pass
+    ```
+
+#### `embedding.py`
+- **CodeEmbedder** (class)
+  - Description: Embeds code using OpenAI embeddings and text splitting techniques.
+  - Code: 
+    ```python
+    class CodeEmbedder:
+        def __init__(self, model_name="text-embedding-ada-002", chunk_size=1000, chunk_overlap=100):
+            pass
+        
+        def create_documents_from_parsed_data(self):
+            pass
+    ```
+
+#### `parser.py`
+- **parse_python_file** (function)
+  - Description: Parses a Python file and extracts functions, classes, and their docstrings.
+  - Code: 
+    ```python
+    def parse_python_file(file_path: str) -> Dict[str, Any]:
+        pass
+    ```
+
+#### `utils.py`
+- **load_config** (function)
+  - Description: Loads configuration settings for the project.
+  - Code: 
+    ```python
+    def load_config(repo_path: str) -> Dict[str, Any]:
+        pass
+    ```
+
+- **get_config_value** (function)
+  - Description: Retrieves a specific value from the project's configuration.
+  - Code: 
+    ```python
+    def get_config_value(config: Dict[str, Any], key: str, default: Any):
+        pass
+    ```
+
+- **get_project_name** (function)
+  - Description: Retrieves the project name from the configuration.
+  - Code: 
+    ```python
+    def get_project_name(repo_path: str) -> str:
+        pass
+    ```
 
 ## Setup and Usage
 
