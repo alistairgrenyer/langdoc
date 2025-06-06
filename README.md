@@ -3,20 +3,20 @@
 ## Project Summary
 ## Project Summary
 
-The `langdoc` project is a tool for generating documentation from Python code. It consists of several key functions and classes:
+langdoc is a Python project that provides tools for generating documentation and embedding code. The project consists of several key functions and classes:
 
-- `cli` (function) in `cli.py`: Handles command-line interface functionality.
-- `get_common_options` (function) in `cli.py`: Retrieves common options for the CLI.
-- `_get_parsed_files` (function) in `cli.py`: Parses files for documentation generation.
-- `DocGenerator` (class) in `docgen.py`: Generates documentation from parsed data.
-- `generate_docstring` (function) in `docgen.py`: Generates docstrings for code elements.
-- `CodeEmbedder` (class) in `embedding.py`: Embeds code snippets into documentation.
-- `create_documents_from_parsed_data` (function) in `embedding.py`: Creates documents from parsed data.
-- `get_file_paths` (function) in `parser.py`: Retrieves file paths for parsing.
-- `parse_python_file` (function) in `parser.py`: Parses Python files for documentation extraction.
-- `load_config` (function) in `utils.py`: Loads configuration settings for the project.
-- `get_config_value` (function) in `utils.py`: Retrieves specific values from the configuration.
-- `get_project_name` (function) in `utils.py`: Retrieves the name of the project.
+- `cli`: A function in `cli.py` that serves as the command-line interface.
+- `get_common_options`: A function in `cli.py` that retrieves common options for the CLI.
+- `_get_parsed_files`: A function in `cli.py` that parses files for documentation generation.
+- `DocGenerator`: A class in `docgen.py` responsible for generating docstrings.
+- `generate_docstring`: A function in `docgen.py` that generates docstrings.
+- `CodeEmbedder`: A class in `embedding.py` for embedding code.
+- `create_documents_from_parsed_data`: A function in `embedding.py` that creates documents from parsed data.
+- `get_file_paths`: A function in `parser.py` that retrieves file paths.
+- `parse_python_file`: A function in `parser.py` that parses Python files.
+- `load_config`: A function in `utils.py` that loads configuration settings.
+- `get_config_value`: A function in `utils.py` that retrieves a specific configuration value.
+- `get_project_name`: A function in `utils.py` that gets the project name.
 
 ## File Structure
 

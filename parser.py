@@ -51,7 +51,9 @@ def get_file_paths(repo_path: str, file_ext: str = '.py', skip_dirs: Optional[Li
                 dir_path_abs = os.path.join(abs_root, d_name)
                 dir_path_rel_to_git_root = os.path.relpath(dir_path_abs, git_working_dir).replace(os.sep, '/')
                 try:
-                    is_ignored_by_git = git_repo_obj.is_ignored(dir_path_rel_to_git_root)
+                    # Check if path is ignored using git check-ignore command
+                    is_ignored_output = git_repo_obj.git.check_ignore(dir_path_rel_to_git_root, with_exceptions=False)
+                    is_ignored_by_git = bool(is_ignored_output.strip())
                     print(f"DEBUG_PARSER: Git check for DIR '{dir_path_rel_to_git_root}': Ignored = {is_ignored_by_git}")
                     if not is_ignored_by_git:
                         dirs.append(d_name)
@@ -70,7 +72,9 @@ def get_file_paths(repo_path: str, file_ext: str = '.py', skip_dirs: Optional[Li
                 if git_repo_obj and git_working_dir:
                     file_path_rel_to_git_root = os.path.relpath(file_path_abs, git_working_dir).replace(os.sep, '/')
                     try:
-                        is_ignored_by_git = git_repo_obj.is_ignored(file_path_rel_to_git_root)
+                        # Check if file is ignored using git check-ignore command
+                        is_ignored_output = git_repo_obj.git.check_ignore(file_path_rel_to_git_root, with_exceptions=False)
+                        is_ignored_by_git = bool(is_ignored_output.strip())
                         print(f"DEBUG_PARSER: Git check for FILE '{file_path_rel_to_git_root}': Ignored = {is_ignored_by_git}")
                         if is_ignored_by_git:
                             is_file_ignored_by_git = True
