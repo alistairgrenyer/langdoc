@@ -104,8 +104,8 @@ class CodeEmbedder:
     - Providing similarity search for RAG
     """
     # Storage configuration - follow platform conventions for cache directories
-    @classmethod
-    def _get_cache_dir(cls):
+    @staticmethod
+    def _get_cache_dir():
         """Get the appropriate cache directory based on the platform."""
         if platform.system() == "Windows":
             # On Windows, use %LOCALAPPDATA%\langdoc\cache\embeddings
@@ -115,7 +115,7 @@ class CodeEmbedder:
             # On Linux/macOS, use ~/.cache/langdoc/embeddings
             return os.path.join(os.path.expanduser("~"), ".cache", "langdoc", "embeddings")
     
-    DB_DIR = _get_cache_dir.__func__()  # Get the cache directory at module load time
+    DB_DIR = _get_cache_dir()  # Get the cache directory at module load time
     COLLECTION_PREFIX = "langdoc_"  # Prefix for Chroma collections
     
     def __init__(self, model_name: str = "text-embedding-ada-002", chunk_size: int = 1000, 
