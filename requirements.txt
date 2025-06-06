@@ -1,0 +1,11 @@
+langchain
+openai
+faiss-cpu
+GitPython
+click
+python-dotenv
+astroid
+# Add other dependencies as needed, e.g., tiktoken for OpenAI token counting
+tiktoken
+langchain-openai
+langchain-community
