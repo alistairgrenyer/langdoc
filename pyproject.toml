@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 100
+target-version = ["py38", "py39", "py310"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+[project]
+name = "langdoc"
+version = "0.1.0"
+description = "A CLI tool to analyze and document Git repositories using LangChain and RAG"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Alistair Grenyer"}
+]
+dependencies = [
+    "click",
+    "langchain",
+    "langchain_openai",
+    "chromadb",
+    "openai",
+    "gitpython",
+    "python-dotenv",
+    "tenacity",
+]
+
+[project.scripts]
+langdoc = "langdoc.cli:cli"
