@@ -80,26 +80,35 @@ class DocGenerator:
 {key_elements_summary}
 
                 
-                Detailed File Descriptions:
+                File Descriptions:
 {file_descriptions}
 
                 
-                Existing {section_title} Content (if any):
+                Existing Section Content (if updating):
 {existing_section_content}
 
+                Context-Specific Instructions:
+{context}
                 
                 INSTRUCTIONS:
-                1. Create a well-structured '{section_title}' section for a technical README
-                2. If this is a "Project Summary" section, focus on the project's purpose, key features, and technologies
-                3. If this is a "File Structure" section, explain the organization and highlight important directories
-                4. If this is a "Notable Classes/Functions" section, explain the key components and their relationships
-                5. Use proper markdown formatting (headers, lists, code blocks) for readability
-                6. Focus on being clear, accurate, and helpful to new project contributors
-                7. If the existing content is already good, you can enhance it or respond with "No change needed"
-                8. Appropriately include and highlight any detailed file descriptions from the RAG process
+                1. Create a well-structured '{section_title}' section for a README.md file
+                2. Use clear and concise language with proper Markdown formatting
+                3. Include important details from the provided information as appropriate
+                4. If 'existing_section_content' is provided, use it as a basis, but enhance and update it
+                5. Focus on explaining the purpose, functionality, and structure as needed for this section
+                6. Format your response as Markdown with appropriate headers, formatting, and sections
+                7. If updating an existing section, preserve the general structure but improve content
+                8. If the existing content is already excellent and complete, you may respond with 'No change needed'
+                9. Follow any specific guidance provided in the Context-Specific Instructions
                 
-                Write ONLY the content for the section itself. Do NOT include explanations about what you're doing.
-                Start directly with the markdown content for the section.
+                For this '{section_title}' section, focus specifically on providing:
+                - Clear explanations relevant to the section topic
+                - Well-organized structure with proper headings
+                - Code examples or formatting as appropriate
+                - Connections to other parts of the project where relevant
+                
+                Respond with ONLY the formatted section content in Markdown, ready to be directly inserted into the README.md file.
+                Do NOT include any explanation outside of the content itself.
                 """
             )
             
@@ -276,7 +285,7 @@ class DocGenerator:
     
     def generate_readme_section(self, section_title: str, project_name: str, file_structure: str, 
                               key_elements_summary: str, file_descriptions: str = "No detailed file descriptions available.",
-                              existing_section_content: str = "") -> Optional[str]:
+                              existing_section_content: str = "", context: str = "") -> Optional[str]:
         """Generate a well-structured README section using the available project information.
         
         Args:
@@ -286,6 +295,7 @@ class DocGenerator:
             key_elements_summary: Summary of key functions and classes
             file_descriptions: Detailed descriptions of files obtained via RAG
             existing_section_content: Existing content for this section (if any)
+            context: Additional context-specific instructions for this section
             
         Returns:
             Generated markdown content for the section, or None if generation failed
@@ -302,7 +312,8 @@ class DocGenerator:
                 "file_structure": file_structure,
                 "key_elements_summary": key_elements_summary,
                 "file_descriptions": file_descriptions,
-                "existing_section_content": existing_section_content
+                "existing_section_content": existing_section_content,
+                "context": context or ""
             })
             return content
         except Exception as e:

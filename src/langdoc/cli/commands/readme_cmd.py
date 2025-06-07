@@ -20,10 +20,8 @@ from langdoc.cli.utils import echo_styled, get_parsed_files, validate_api_key
               help='File to save the generated README.', 
               type=click.Path(dir_okay=False, writable=True), 
               show_default=True)
-@click.option('--use-rag', is_flag=True, 
-              help='Use RAG to enhance documentation with detailed file and function descriptions.')
 @pass_langdoc_ctx
-def readme(ctx: LangDocContext, repo_path: str, output_file: str, use_rag: bool):
+def readme(ctx: LangDocContext, repo_path: str, output_file: str):
     """Generate or update the README.md file."""
     echo_styled(f"--- Generating README for: {os.path.abspath(repo_path)} ---", "header")
 
@@ -52,61 +50,52 @@ def readme(ctx: LangDocContext, repo_path: str, output_file: str, use_rag: bool)
                 )
     key_elements_summary = "\n".join(key_elements_summary_parts) if key_elements_summary_parts else "No key elements automatically extracted."
 
-    # Get detailed file descriptions using RAG if requested
+    # Get detailed file descriptions using RAG
+    echo_styled("Using RAG to retrieve detailed file descriptions...", "info")
     file_descriptions = "No detailed file descriptions available."
     active_embedder = None
     
-    if use_rag:
-        echo_styled("Using RAG to retrieve detailed file descriptions...", "info")
+    # First check for OPENAI_API_KEY which is required for embeddings
+    if not os.getenv('OPENAI_API_KEY'):
+        echo_styled("❌ OPENAI_API_KEY is not set. Cannot proceed without it.", "error")
+        echo_styled("Set the OPENAI_API_KEY environment variable and try again.", "info")
+        return
         
+    # Initialize embedder if not already done
+    if ctx.embedder is None:
+        ctx.init_embedder()
+    
+    # Check if we have a working embedder now
+    if ctx.embedder and ctx.embedder.vector_store:
+        echo_styled("✅ Using existing embeddings for RAG.", "success")
+        active_embedder = ctx.embedder
+    else:
+        # No working embedder yet, try to create one
+        echo_styled("Checking for existing embeddings...", "info")
         try:
-            # First check for OPENAI_API_KEY which is required for embeddings
-            if not os.getenv('OPENAI_API_KEY'):
-                echo_styled("❌ OPENAI_API_KEY is not set. RAG features disabled.", "error")
-                echo_styled("Set the OPENAI_API_KEY environment variable and try again.", "info")
-                echo_styled("Falling back to basic README generation...", "info")
-                use_rag = False
+            # Initialize CodeEmbedder with repository path for proper metadata tracking
+            embedder = CodeEmbedder(
+                repo_path=repo_path,
+            )
+            
+            # Try to load existing embeddings first
+            if embedder.load_vector_store():
+                echo_styled("✅ Using existing embeddings for RAG.", "success")
+                active_embedder = embedder
+                # Update context embedder
+                ctx.embedder = embedder
             else:
-                # Initialize embedder if not already done
-                if ctx.embedder is None:
-                    ctx.init_embedder()
-                
-                # Check if we have a working embedder now
-                if ctx.embedder and ctx.embedder.vector_store:
-                    echo_styled("✅ Using existing embeddings for RAG.", "success")
-                    active_embedder = ctx.embedder
-                else:
-                    # No working embedder yet, try to create one
-                    echo_styled("Building embeddings for RAG...", "info")
-                    try:
-                        # Initialize CodeEmbedder with repository path for proper metadata tracking
-                        embedder = CodeEmbedder(
-                            repo_path=repo_path,
-                        )
-                        
-                        # Try to load existing embeddings first
-                        if embedder.load_vector_store():
-                            echo_styled("✅ Using existing embeddings for RAG.", "success")
-                            active_embedder = embedder
-                            # Update context embedder
-                            ctx.embedder = embedder
-                        else:
-                            echo_styled("No existing embeddings found. Run 'langdoc parse --use-rag' first.", "warning")
-                            echo_styled("Falling back to basic README generation.", "info")
-                            use_rag = False
-                    except Exception as e:
-                        echo_styled(f"❌ Error initializing embedder: {e}", "error")
-                        echo_styled("Falling back to basic README generation.", "info")
-                        use_rag = False
-                        
+                echo_styled("No existing embeddings found. Please run 'langdoc parse' first.", "error")
+                echo_styled("Cannot generate README without embeddings.", "info")
+                return
         except Exception as e:
-            echo_styled(f"❌ Error with RAG setup: {e}", "error")
-            echo_styled("Falling back to basic README generation.", "info")
-            use_rag = False
+            echo_styled(f"❌ Error initializing embedder: {e}", "error")
+            echo_styled("Cannot proceed without working embeddings.", "info")
+            return
 
-    # If we have an active embedder, use it to generate file descriptions
+    # Use the active embedder to generate file descriptions
     file_descriptions_parts = []
-    if use_rag and active_embedder:
+    if active_embedder:
         # Get descriptions for up to 5 most important files
         important_file_patterns = [
             "main", "app", "index", "core", "model", "util", "config", "client", "server"
@@ -145,13 +134,14 @@ def readme(ctx: LangDocContext, repo_path: str, output_file: str, use_rag: bool)
     
     # Project Summary Section
     echo_styled("Generating Project Summary section...", "info")
-    # Always use LLM since we enforce API key
+    # Provide rich context for the LLM to generate a comprehensive project summary
     summary_section_content = doc_generator.generate_readme_section(
         section_title="Project Summary",
         project_name=project_name,
         file_structure=file_structure_md,
         key_elements_summary=key_elements_summary,
-        file_descriptions=file_descriptions
+        file_descriptions=file_descriptions,
+        context="This is a summary section that should explain the purpose, key features, and value proposition of the project in a clear, engaging way. Feel free to be creative while accurately representing what the project does."
     )
     if summary_section_content and summary_section_content.lower().strip() != 'no change needed':
         # Let the LLM handle the heading
@@ -163,13 +153,14 @@ def readme(ctx: LangDocContext, repo_path: str, output_file: str, use_rag: bool)
 
     # File Structure Section
     echo_styled("Generating File Structure section...", "info")
-    # Always use LLM since we enforce API key
+    # Provide rich context for the LLM to understand how to explain the file structure
     file_structure_content = doc_generator.generate_readme_section(
         section_title="File Structure",
         project_name=project_name,
         file_structure=file_structure_md,
         key_elements_summary=key_elements_summary,
-        file_descriptions=file_descriptions
+        file_descriptions=file_descriptions,
+        context="Explain the organization of files and directories in the project. Focus on the main components and their relationships. You can use your judgment to organize the structure in a way that's most helpful to new users of the project."
     )
     if file_structure_content and file_structure_content.lower().strip() != 'no change needed':
         # Let the LLM handle the heading
@@ -181,13 +172,14 @@ def readme(ctx: LangDocContext, repo_path: str, output_file: str, use_rag: bool)
 
     # Key Classes/Functions Section
     echo_styled("Generating Notable Classes/Functions section...", "info")
-    # Always use LLM since we enforce API key
+    # Provide rich context for the LLM to highlight important code elements
     notable_elements_content = doc_generator.generate_readme_section(
         section_title="Notable Classes/Functions",
         project_name=project_name,
         file_structure=file_structure_md,
         key_elements_summary=key_elements_summary,
-        file_descriptions=file_descriptions
+        file_descriptions=file_descriptions,
+        context="Highlight the most important classes and functions in the project. Explain what they do, why they're important, and how they relate to each other. Feel free to organize them by functionality or importance."
     )
     if notable_elements_content and notable_elements_content.lower().strip() != 'no change needed':
         # Let the LLM handle the heading
