@@ -1,14 +1,75 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling>=1.8.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "langdoc"
+version = "0.1.0"
+description = "Auto-generate documentation for codebases using LLMs and RAG"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "LangDoc Team"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Documentation",
+    "Topic :: Software Development :: Documentation",
+]
+dependencies = [
+    "langchain>=0.1.0",
+    "langchain-community>=0.1.0",
+    "langchain-openai>=0.1.0",
+    "chromadb>=0.4.18",
+    "typer>=0.9.0",
+    "rich>=13.5.0",
+    "pydantic>=2.4.0",
+    "sentence-transformers>=2.2.2",
+    "tiktoken>=0.5.0",
+    "typing-extensions>=4.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=23.3.0",
+    "isort>=5.12.0",
+    "mypy>=1.3.0",
+    "pytest>=7.3.1",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.0.270",
+    "hypothesis>=6.80.0",
+]
+docs = [
+    "mkdocs>=1.4.3",
+    "mkdocstrings[python]>=0.22.0",
+    "mkdocs-material>=9.1.15",
+]
+
+[project.scripts]
+langdoc = "langdoc.cli.app:app"
+
+[project.urls]
+Documentation = "https://github.com/langdoc/langdoc#readme"
+Issues = "https://github.com/langdoc/langdoc/issues"
+Source = "https://github.com/langdoc/langdoc"
 
 [tool.black]
-line-length = 100
-target-version = ["py38", "py39", "py310"]
+line-length = 88
+target-version = ["py38", "py39", "py310", "py311"]
+include = '\.pyi?$'
 
 [tool.isort]
 profile = "black"
-line_length = 100
+line_length = 88
 
 [tool.mypy]
 python_version = "3.8"
@@ -16,33 +77,19 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+strict_optional = true
 
-[project]
-name = "langdoc"
-version = "0.1.0"
-description = "A CLI tool to analyze and document Git repositories using LangChain and RAG"
-readme = "README.md"
-requires-python = ">=3.8"
-license = {text = "MIT"}
-authors = [
-    {name = "Alistair Grenyer"}
-]
-dependencies = [
-    "click",
-    "langchain",
-    "langchain_openai",
-    "chromadb",
-    "openai",
-    "gitpython",
-    "python-dotenv",
-    "tenacity",
-]
+[tool.ruff]
+target-version = "py38"
+line-length = 88
+select = ["E", "F", "B", "I", "N", "UP", "COM", "C4", "PLW", "PIE"]
+ignore = ["E203"]
 
-[project.scripts]
-langdoc = "langdoc.cli.main:cli"
-
-[tool.setuptools]
-package-dir = {"" = "src"}
-
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = "test_*.py"
+addopts = "--cov=langdoc --cov-report=term-missing"
