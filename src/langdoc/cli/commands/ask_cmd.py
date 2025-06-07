@@ -4,16 +4,10 @@ Ask command implementation for langdoc CLI.
 import os
 import click
 
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.chains import create_retrieval_chain
-
 from langdoc.core.embedding import CodeEmbedder
-from langdoc.utils.common import get_config_value
 from langdoc.cli.context import pass_langdoc_ctx, LangDocContext
 from langdoc.cli.utils import echo_styled, validate_api_key
-
+from langdoc.core.generators.ask import AskGenerator
 
 @click.command()
 @click.argument('question')
@@ -34,7 +28,7 @@ def ask(ctx: LangDocContext, question: str, repo_path: str):
     ctx.init_from_repo_path(repo_path)
     
     # Get LLM model from config
-    llm_model = get_config_value(ctx.config, 'llm_model', 'gpt-3.5-turbo')
+    llm_model = ctx.config.get('llm_model', 'gpt-3.5-turbo')
 
     # Initialize embedder if needed
     if ctx.embedder is None:
@@ -83,35 +77,16 @@ def ask(ctx: LangDocContext, question: str, repo_path: str):
 
     echo_styled(f"Found {len(retrieved_docs)} relevant document(s). Synthesizing answer...", "info")
 
-    # Setup RAG chain
-    llm = ChatOpenAI(model=llm_model, temperature=0.3)
+    # Initialize the AskGenerator
+    ask_generator = AskGenerator(model_name=llm_model)
     
-    # RAG prompt
-    rag_prompt_template = """
-    You are an AI assistant helping to answer questions about a codebase.
-    Use the following retrieved code context to answer the question.
-    If you don't know the answer from the context, say that you don't know.
-    Be concise and focus on the information present in the provided context.
-
-    Context:
-    {context}
-
-    Question: {input}
-
-    Answer:
-    """
-    rag_prompt = ChatPromptTemplate.from_template(rag_prompt_template)
-
-    # Create the document chain for combining documents into context
-    document_chain = create_stuff_documents_chain(llm, rag_prompt)
-    
-    # Create the retrieval chain with the vector store as retriever
+    # Create retriever from the vector store
     retriever = ctx.embedder.vector_store.as_retriever(search_kwargs={"k": 5})
-    retrieval_chain = create_retrieval_chain(retriever, document_chain)
-
-    # Execute the chain and display results
+    
+    # Execute the generator to get an answer
     try:
-        response = retrieval_chain.invoke({"input": question})
+        # Use the generator to get an answer
+        response = ask_generator.generate_answer(question, retriever)
         answer = response.get('answer', "Sorry, I couldn't formulate an answer based on the retrieved context.")
         echo_styled("\nAnswer:", "header")
         echo_styled(answer, "default")
@@ -121,4 +96,4 @@ def ask(ctx: LangDocContext, question: str, repo_path: str):
         # for i, doc_item in enumerate(response.get('context', [])):
         #     echo_styled(f"  {i+1}. {doc_item.metadata.get('source')} - {doc_item.metadata.get('name')}", "info")
     except Exception as e:
-        echo_styled(f"Error during RAG chain invocation: {e}", "error")
+        echo_styled(f"Error during answer generation: {e}", "error")

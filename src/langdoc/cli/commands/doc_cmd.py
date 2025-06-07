@@ -3,8 +3,7 @@ Documentation generation command implementation for langdoc CLI.
 """
 import os
 import click
-from langdoc.utils.common import get_config_value
-from langdoc.core.docgen import DocGenerator
+from langdoc.core.generators.doc import DocGenerator
 from langdoc.cli.context import pass_langdoc_ctx, LangDocContext
 from langdoc.cli.utils import echo_styled, get_parsed_files, validate_api_key, create_directory_if_not_exists
 
@@ -32,7 +31,7 @@ def doc(ctx: LangDocContext, repo_path: str, output_dir: str, update_docstrings:
     ctx.init_from_repo_path(repo_path)
     
     # Initialize doc generator
-    llm_model = get_config_value(ctx.config, 'llm_model', 'gpt-3.5-turbo')
+    llm_model = ctx.config.get('llm_model', 'gpt-3.5-turbo')
     doc_generator = DocGenerator(model_name=llm_model)
 
     # Parse files
