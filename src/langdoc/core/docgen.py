@@ -25,6 +25,7 @@ class DocGenerator:
         """
         if OPENAI_API_KEY:
             self.llm = ChatOpenAI(model=model_name, openai_api_key=OPENAI_API_KEY, temperature=0.2)
+            self.output_parser = StrOutputParser()
             self.docstring_prompt = ChatPromptTemplate.from_template(
                 """Analyze the following {code_type} named '{code_name}' and generate a professional docstring for it.
 
@@ -319,6 +320,153 @@ class DocGenerator:
         except Exception as e:
             print(f"Error generating README section '{section_title}': {e}")
             return None
+    
+    def generate_readme(self, project_name: str, file_structure: str, key_elements_summary: str, 
+                   file_descriptions: str, repo_path: str) -> Optional[str]:
+        """Generate a complete README document for a project.
+        
+        This method handles the entire README generation process, including all sections:
+        - Project Summary
+        - File Structure
+        - Core Features
+        - Setup and Installation
+        - Quick Start Guide
+        
+        Args:
+            project_name: The name of the project
+            file_structure: Markdown representation of the file structure
+            key_elements_summary: Summary of key functions and classes
+            file_descriptions: Detailed descriptions of files obtained via RAG
+            repo_path: Path to the repository (for checking presence of files like requirements.txt)
+        
+        Returns:
+            Complete README markdown content, or None if generation failed
+        """
+        if not self.llm:
+            print("Cannot generate README: LLM not available.")
+            return None
+        
+        # Begin README content generation
+        readme_content = f"# {project_name}\n\n"
+        
+        # Project Summary Section
+        project_summary = self.generate_readme_section(
+            "Project Summary", 
+            project_name, 
+            file_structure, 
+            "",  # No need to include key elements in summary
+            file_descriptions,
+            context="Create a concise project summary that explains what the project does and its main benefits. "
+                   "Keep this section brief (2-3 paragraphs max) but informative, focusing on the project's purpose, "
+                   "primary features, and intended use cases. Avoid overly technical language and write for a "
+                   "developer audience who needs to understand if this tool is relevant to their needs."
+        )
+        if project_summary and project_summary.lower().strip() != 'no change needed':
+            readme_content += f"{project_summary}\n\n"
+        else:
+            readme_content += f"## Project Summary\n\nA tool for {project_name} that helps with code documentation.\n\n"
+
+        # File Structure Section
+        file_structure_content = self.generate_readme_section(
+            "File Structure",
+            project_name,
+            file_structure,
+            key_elements_summary,
+            file_descriptions,
+            context="Explain the organization of files and directories in the project. Focus on the main components and "
+                   "their relationships. You can use your judgment to organize the structure in a way that's most "
+                   "helpful to new users of the project."
+        )
+        if file_structure_content and file_structure_content.lower().strip() != 'no change needed':
+            readme_content += f"{file_structure_content}\n\n"
+        else:
+            readme_content += f"## File Structure\n\n```\n{file_structure}\n```\n\n"
+
+        # Core Features Section
+        core_features_content = self.generate_readme_section(
+            "Core Features",
+            project_name,
+            file_structure,
+            key_elements_summary,
+            file_descriptions,
+            context="Focus on the main capabilities and features of the tool rather than listing functions/classes. "
+                   "Explain what the tool allows users to do, how it can be useful, and what problems it solves. "
+                   "Organize by functionality, not by code structure."
+        )
+        if core_features_content and core_features_content.lower().strip() != 'no change needed':
+            readme_content += f"{core_features_content}\n\n"
+        else:
+            readme_content += "## Core Features\n\nThis tool offers features for parsing code, generating documentation, and answering questions about codebases.\n\n"
+
+        # Setup and Usage Section
+        setup_instructions = """### Installation
+
+1.  Install from PyPI:
+    ```bash
+    pip install langdoc
+    ```
+
+2. Set up OpenAI API key as an environment variable:
+   ```bash
+   # On Linux/Mac
+   export OPENAI_API_KEY="your-api-key-here"
+   
+   # On Windows
+   set OPENAI_API_KEY=your-api-key-here
+   ```
+   
+   Alternatively, create a `.env` file in your project directory:
+   ```
+   OPENAI_API_KEY=your-api-key-here
+   ```
+"""
+        
+        quick_start_guide = """### Quick Start Guide
+
+1. **Parse your repository and build embeddings (required first step):**
+   ```bash
+   langdoc parse
+   ```
+   This analyzes your code and creates embeddings for semantic search capabilities.
+
+2. **Generate documentation for your project:**
+   ```bash
+   langdoc doc --output-dir docs
+   ```
+
+3. **Ask questions about your codebase:**
+   ```bash
+   langdoc ask "How does the authentication work?"
+   ```
+   Get answers based on the semantic understanding of your code.
+
+4. **Generate a descriptive README:**
+   ```bash
+   langdoc readme
+   ```
+   Creates or updates a README.md file with project information.
+
+All commands accept a `--path` option to specify a different repository path. By default, langdoc works in the current directory.
+"""
+        
+        # Add Setup and Usage section
+        usage_section = self.generate_readme_section(
+            "Setup and Usage",
+            project_name,
+            file_structure,
+            key_elements_summary,
+            file_descriptions,
+            context="Provide clear installation instructions and quick start guide for using the tool. Focus on how "
+                   "to install via pip and how to use the basic commands. Make sure the instructions are practical "
+                   "and concise."
+        )
+        
+        if usage_section and usage_section.lower().strip() != 'no change needed':
+            readme_content += f"{usage_section}\n\n"
+        else:
+            readme_content += f"## Setup and Usage\n\n{setup_instructions}\n\n{quick_start_guide}\n\n"
+        
+        return readme_content
     
     def generate_file_description(self, code_snippet: str, file_name: str) -> str:
         """Generate a brief description of a file based on a code snippet.

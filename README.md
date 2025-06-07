@@ -2,73 +2,122 @@
 
 ## Project Summary
 
-The `langdoc` project is a Python codebase designed to provide language documentation capabilities. It consists of the following key components:
+The **langdoc** project is a comprehensive tool designed to assist users in language documentation tasks. With a well-organized file structure, the project offers key functions and classes that streamline the process of generating documentation for various languages. 
 
-- `LangDocContext` (class) in `context.py` for managing the context of language documentation
-- `cli` (function) in `main.py` for command-line interface functionality
-- `echo_styled` (function) in `utils.py` for styled output in the CLI
-- `get_parsed_files` (function) in `utils.py` for parsing files
-- `validate_api_key` (function) in `utils.py` for validating API keys
-- `ask` (function) in `ask_cmd.py` for asking questions
-- `doc` (function) in `doc_cmd.py` for documentation purposes
+### Key Functions/Classes Summary:
+- `LangDocContext` (class) in `context.py`
+- `__init__` (function) in `context.py`
+- `init_from_repo_path` (function) in `context.py`
+- `cli` (function) in `main.py`
+- `echo_styled` (function) in `utils.py`
+- `get_parsed_files` (function) in `utils.py`
+- `validate_api_key` (function) in `utils.py`
+- `ask` (function) in `ask_cmd.py`
+- `doc` (function) in `doc_cmd.py`
 
-The project structure includes directories such as `cli`, `core`, and `utils`, each containing relevant Python files for different functionalities. The `langdoc` project aims to streamline the process of language documentation through its CLI and core functionalities.
+The project structure includes a `cli` module for command-line interface functionality, a `core` module for core functionalities like document generation and parsing, and a `utils` module for common utility functions. 
 
-## File Structure
+Explore the various modules and functions to leverage the power of **langdoc** in your language documentation endeavors.
+
+### File Structure
 
 ```
 langdoc/
-├── .langdoc_db/
-│   └── langdoc_acf8549fe385693015732ed0b79468cd/
-│       └── 73a42ec6-e8a4-4e6e-a2aa-ccf5bcc61242/
-├── langdoc/
-│   ├── __init__.py
-│   ├── cli/
-│   │   ├── __init__.py
-│   │   ├── commands/
-│   │   │         └── ... (too deep)
-│   │   ├── context.py
-│   │   ├── main.py
-│   │   └── utils.py
-│   ├── cli.py
-│   ├── core/
-│   │   ├── __init__.py
-│   │   ├── docgen.py
-│   │   ├── embedding.py
-│   │   └── parser.py
-│   └── utils/
-│       ├── __init__.py
-│       └── common.py
-├── langdoc.egg-info/
-└── setup.py
+├── setup.py
+└── src/
+    └── langdoc/
+        ├── __init__.py
+        ├── cli/
+        │   ├── __init__.py
+        │   ├── commands/
+        │   │   ├── __init__.py
+        │   │   ├── ask_cmd.py
+        │   │   ├── doc_cmd.py
+        │   │   ├── parse_cmd.py
+        │   │   └── readme_cmd.py
+        │   ├── context.py
+        │   ├── main.py
+        │   └── utils.py
+        ├── cli.py
+        ├── core/
+        │   ├── __init__.py
+        │   ├── docgen.py
+        │   ├── embedding.py
+        │   └── parser.py
+        └── utils/
+            ├── __init__.py
+            └── common.py
 ```
 
-The `langdoc` project is structured as follows:
+- `setup.py`: Project setup file.
+- `src/`: Source code directory.
+  - `langdoc/`: Main package directory.
+    - `__init__.py`: Initialization file.
+    - `cli/`: Command-line interface package.
+      - `__init__.py`: Initialization file.
+      - `commands/`: Command modules package.
+        - `ask_cmd.py`: Module for asking commands.
+        - `doc_cmd.py`: Module for documentation commands.
+        - `parse_cmd.py`: Module for parsing commands.
+        - `readme_cmd.py`: Module for readme commands.
+      - `context.py`: Module for context handling.
+      - `main.py`: Main CLI module.
+      - `utils.py`: Utility functions module.
+    - `cli.py`: CLI entry point.
+    - `core/`: Core functionality package.
+      - `__init__.py`: Initialization file.
+      - `docgen.py`: Document generation module.
+      - `embedding.py`: Embedding module.
+      - `parser.py`: Parsing module.
+    - `utils/`: Utility functions package.
+      - `__init__.py`: Initialization file.
+      - `common.py`: Common utility functions.
 
-- The `.langdoc_db` directory contains internal database files for the project.
-- The `langdoc` directory is the main package containing the following modules:
-  - `cli`: Contains command-line interface related files.
-  - `core`: Contains core functionality modules like document generation, embedding, and parsing.
-  - `utils`: Contains utility functions used throughout the project.
-
-Key files include `context.py`, `main.py`, `utils.py`, `docgen.py`, `embedding.py`, `parser.py`, and `common.py`.
-
-The project also includes `langdoc.egg-info` and `setup.py` for packaging and distribution purposes.
+Key Functions/Classes Summary:
+- `LangDocContext` (class) in `context.py`
+- `__init__` (function) in `context.py`
+- `init_from_repo_path` (function) in `context.py`
+- `cli` (function) in `main.py`
+- `echo_styled` (function) in `utils.py`
+- `get_parsed_files` (function) in `utils.py`
+- `validate_api_key` (function) in `utils.py`
+- `ask` (function) in `ask_cmd.py`
+- `doc` (function) in `doc_cmd.py`
+```
 
 ## Notable Classes/Functions
 
-### Classes:
-- `LangDocContext` (in `context.py`): Class responsible for managing the context of the LangDoc application.
+### `LangDocContext` (class) in `context.py`
+- The `LangDocContext` class provides a central context for the langdoc project.
+- It contains essential methods like `__init__` and `init_from_repo_path` for initializing and setting up the context.
 
-### Functions:
-- `__init__` (in `context.py`): Function to initialize the LangDocContext class.
-- `init_from_repo_path` (in `context.py`): Function to initialize the context from a repository path.
-- `cli` (in `main.py`): Function to handle the command-line interface of LangDoc.
-- `echo_styled` (in `utils.py`): Function to echo styled output to the console.
-- `get_parsed_files` (in `utils.py`): Function to retrieve parsed files.
-- `validate_api_key` (in `utils.py`): Function to validate an API key.
-- `ask` (in `ask_cmd.py`): Function to prompt the user for input.
-- `doc` (in `doc_cmd.py`): Function to handle documentation commands.
+### `cli` (function) in `main.py`
+- The `cli` function in `main.py` serves as the entry point for the command-line interface of langdoc.
+- It orchestrates the available commands and functionalities provided by the CLI.
+
+### `echo_styled` (function) in `utils.py`
+- The `echo_styled` function in `utils.py` is responsible for printing styled output to the console.
+- It enhances the user experience by formatting and displaying information in a visually appealing way.
+
+### `get_parsed_files` (function) in `utils.py`
+- The `get_parsed_files` function in `utils.py` retrieves and processes parsed files for further analysis.
+- It plays a crucial role in extracting relevant data for various operations within the project.
+
+### `validate_api_key` (function) in `utils.py`
+- The `validate_api_key` function in `utils.py` validates the API key used for authentication purposes.
+- It ensures the security and integrity of interactions with external services.
+
+### `ask` (function) in `ask_cmd.py`
+- The `ask` function in `ask_cmd.py` implements the functionality for prompting user input and processing responses.
+- It enables interactive communication with the user during specific operations.
+
+### `doc` (function) in `doc_cmd.py`
+- The `doc` function in `doc_cmd.py` handles the generation and documentation of project-related information.
+- It facilitates the creation of documentation artifacts based on the provided input.
+
+---
+
+Feel free to expand on these classes and functions in more detail as needed for your project's documentation.
 
 ## Setup and Usage
 

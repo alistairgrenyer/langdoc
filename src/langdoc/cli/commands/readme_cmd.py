@@ -3,12 +3,11 @@ README generation command implementation for langdoc CLI.
 """
 import os
 import click
-
-from langdoc.core.docgen import DocGenerator
-from langdoc.core.embedding import CodeEmbedder
-from langdoc.utils.common import get_config_value, get_project_name, get_file_tree
-from langdoc.cli.context import pass_langdoc_ctx, LangDocContext
 from langdoc.cli.utils import echo_styled, get_parsed_files, validate_api_key
+from langdoc.utils.common import get_project_name, get_file_tree
+from langdoc.core.generators.readme import ReadmeGenerator
+from langdoc.core.embedding import CodeEmbedder
+from langdoc.cli.context import pass_langdoc_ctx, LangDocContext
 
 
 @click.command()
@@ -32,8 +31,9 @@ def readme(ctx: LangDocContext, repo_path: str, output_file: str):
     ctx.init_from_repo_path(repo_path)
     
     # Initialize doc generator
-    llm_model = get_config_value(ctx.config, 'llm_model', 'gpt-3.5-turbo')
-    doc_generator = DocGenerator(model_name=llm_model)
+    model_name = ctx.config.get('llm_model', 'gpt-3.5-turbo')
+    echo_styled("Initializing README generator...", "info")
+    readme_generator = ReadmeGenerator(model_name=model_name)
     project_name = get_project_name(repo_path)
 
     echo_styled("Gathering project information...", "info")
@@ -116,7 +116,7 @@ def readme(ctx: LangDocContext, repo_path: str, output_file: str):
                     if filepath and filepath not in [f['file'] for f in found_files]:
                         found_files.append({
                             'file': filepath,
-                            'description': doc_generator.generate_file_description(
+                            'description': readme_generator.generate_file_description(
                                 doc.page_content, os.path.basename(filepath)
                             )
                         })
@@ -125,127 +125,19 @@ def readme(ctx: LangDocContext, repo_path: str, output_file: str):
 
         # Add the descriptions to our list
         for file_info in found_files:
-            file_descriptions_parts.append(f"- `{os.path.basename(file_info['file'])}`: {file_info['description']}")
-            
+            # Just use the basename as the document name
+            doc_name = os.path.basename(file_info['file'])
+            file_descriptions_parts.append(f"- `{doc_name}`: {file_info['description']}")     
     file_descriptions = "\n".join(file_descriptions_parts) if file_descriptions_parts else "No detailed file descriptions available."
 
-    # Begin README content generation
-    readme_content = f"# {project_name}\n\n"
-    
-    # Project Summary Section
-    echo_styled("Generating Project Summary section...", "info")
-    # Provide rich context for the LLM to generate a comprehensive project summary
-    summary_section_content = doc_generator.generate_readme_section(
-        section_title="Project Summary",
+    # Generate the complete README content using ReadmeGenerator
+    echo_styled("Generating README content...", "info")
+    readme_content = readme_generator.generate_readme(
         project_name=project_name,
         file_structure=file_structure_md,
         key_elements_summary=key_elements_summary,
-        file_descriptions=file_descriptions,
-        context="This is a summary section that should explain the purpose, key features, and value proposition of the project in a clear, engaging way. Feel free to be creative while accurately representing what the project does."
+        file_descriptions=file_descriptions
     )
-    if summary_section_content and summary_section_content.lower().strip() != 'no change needed':
-        # Let the LLM handle the heading
-        readme_content += f"{summary_section_content}\n\n"
-    else:
-        # Fallback with added heading
-        readme_content += "## Project Summary\nA tool to analyze and document Git repositories using LangChain and RAG.\n\n"
-
-
-    # File Structure Section
-    echo_styled("Generating File Structure section...", "info")
-    # Provide rich context for the LLM to understand how to explain the file structure
-    file_structure_content = doc_generator.generate_readme_section(
-        section_title="File Structure",
-        project_name=project_name,
-        file_structure=file_structure_md,
-        key_elements_summary=key_elements_summary,
-        file_descriptions=file_descriptions,
-        context="Explain the organization of files and directories in the project. Focus on the main components and their relationships. You can use your judgment to organize the structure in a way that's most helpful to new users of the project."
-    )
-    if file_structure_content and file_structure_content.lower().strip() != 'no change needed':
-        # Let the LLM handle the heading
-        readme_content += f"{file_structure_content}\n\n"
-    else:
-        # Fallback with added heading
-        readme_content += f"## File Structure\n\n```\n{file_structure_md}\n```\n\n"
-
-
-    # Key Classes/Functions Section
-    echo_styled("Generating Notable Classes/Functions section...", "info")
-    # Provide rich context for the LLM to highlight important code elements
-    notable_elements_content = doc_generator.generate_readme_section(
-        section_title="Notable Classes/Functions",
-        project_name=project_name,
-        file_structure=file_structure_md,
-        key_elements_summary=key_elements_summary,
-        file_descriptions=file_descriptions,
-        context="Highlight the most important classes and functions in the project. Explain what they do, why they're important, and how they relate to each other. Feel free to organize them by functionality or importance."
-    )
-    if notable_elements_content and notable_elements_content.lower().strip() != 'no change needed':
-        # Let the LLM handle the heading
-        readme_content += f"{notable_elements_content}\n\n"
-    else:
-        # Fallback with added heading
-        readme_content += f"## Notable Classes/Functions\n\n{key_elements_summary}\n\n"
-
-
-    # Setup Instructions Section
-    echo_styled("Generating Setup Instructions section...", "info")
-    setup_instructions = f"""### Setup
-
-1.  Clone the repository:
-    ```bash
-    git clone <your-repo-url>
-    cd {project_name}
-    ```
-"""
-    has_requirements = os.path.exists(os.path.join(repo_path, 'requirements.txt'))
-    has_pyproject = os.path.exists(os.path.join(repo_path, 'pyproject.toml'))
-
-    if has_requirements:
-        setup_instructions += """\n
-2.  Create a virtual environment and install dependencies:
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows: venv\\Scripts\\activate
-    pip install -r requirements.txt
-    ```
-"""
-    elif has_pyproject:
-        setup_instructions += """\n
-2.  This project uses Poetry (or similar). Install dependencies:
-    ```bash
-    poetry install
-    ```
-""" 
-    else:
-        setup_instructions += "\n2. Install dependencies (manual step - check project for details).\n"
-    
-    if os.path.exists(os.path.join(repo_path, '.env.example')):
-        setup_instructions += "\n3. Set up environment variables:\n   Copy `.env.example` to `.env` and fill in your API keys (e.g., `OPENAI_API_KEY`).\n   ```bash\n   cp .env.example .env\n   ```\n"
-
-    readme_content += f"## Setup and Usage\n\n{setup_instructions}\n"
-    readme_content += """### Running LangDoc Commands
-
-Once setup, you can use the LangDoc CLI:
-
--   **Parse the repository and build embeddings:**
-    ```bash
-    langdoc parse --path /path/to/your/repo
-    ```
--   **Generate documentation:**
-    ```bash
-    langdoc doc --path /path/to/your/repo --output-dir project_docs
-    ```
--   **Ask questions about the code:**
-    ```bash
-    langdoc ask "How does the authentication work?" --path /path/to/your/repo
-    ```
--   **Refresh this README:**
-    ```bash
-    langdoc readme --path /path/to/your/repo
-    ```
-"""
 
     try:
         with open(os.path.join(repo_path, output_file), 'w', encoding='utf-8') as f:
