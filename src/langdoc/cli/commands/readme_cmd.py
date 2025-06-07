@@ -37,7 +37,7 @@ def readme(ctx: LangDocContext, repo_path: str, output_file: str):
     project_name = get_project_name(repo_path)
 
     echo_styled("Gathering project information...", "info")
-    file_structure_md = get_file_tree(repo_path, skip_dirs=ctx.skip_dirs, file_ext_filter=ctx.file_ext, max_depth=3)
+    file_structure_md = get_file_tree(repo_path, skip_dirs=ctx.skip_dirs, file_ext_filter=ctx.file_ext, max_depth=6)
     
     # For key elements, parse some files to extract information
     parsed_files_for_readme = get_parsed_files(repo_path, ctx.file_ext, ctx.skip_dirs)

@@ -40,7 +40,18 @@ def get_file_tree(start_path: str, skip_dirs: Optional[List[str]] = None, file_e
         A string representing the file tree.
     """
     if skip_dirs is None:
-        skip_dirs = ['.git', 'venv', '__pycache__', 'node_modules', '.vscode', '.idea', 'dist', 'build']
+        skip_dirs = ['.git', 'venv', '.venv', '__pycache__', 'node_modules', '.vscode', '.idea', 'dist', 'build']
+    
+    # Try to initialize git repo to respect .gitignore
+    git_repo = None
+    try:
+        from git import Repo
+        try:
+            git_repo = Repo(start_path, search_parent_directories=True)
+        except Exception:
+            pass  # Not a git repo, continue without .gitignore support
+    except ImportError:
+        pass  # GitPython not installed, continue without .gitignore support
     
     lines = []
 
@@ -66,12 +77,36 @@ def get_file_tree(start_path: str, skip_dirs: Optional[List[str]] = None, file_e
         entries = []
         for item in items:
             item_path = os.path.join(current_path, item)
-            if os.path.isdir(item_path):
-                if item not in skip_dirs:
+            # Check if the file/dir should be skipped based on skip_dirs or .gitignore
+            rel_path = os.path.relpath(item_path, start=os.path.dirname(start_path))
+            is_ignored = False
+            
+            # Check skip_dirs
+            if os.path.isdir(item_path) and item in skip_dirs:
+                is_ignored = True
+            
+            # Check .gitignore if we have a git repo
+            if not is_ignored and git_repo:
+                try:
+                    # Use git check-ignore command to check if path is ignored
+                    try:
+                        # Convert Windows path to forward slashes for git
+                        git_path = rel_path.replace('\\', '/')
+                        git_repo.git.check_ignore(git_path)
+                        is_ignored = True
+                    except Exception:
+                        # If check_ignore raises an exception, the file is not ignored
+                        is_ignored = False
+                except Exception:
+                    # Fall back to skip_dirs if git check fails
+                    pass
+            
+            if not is_ignored:
+                if os.path.isdir(item_path):
                     entries.append((item, True))
-            elif os.path.isfile(item_path):
-                if not file_ext_filter or item.endswith(file_ext_filter):
-                    entries.append((item, False))
+                elif os.path.isfile(item_path):
+                    if not file_ext_filter or item.endswith(file_ext_filter):
+                        entries.append((item, False))
         
         for i, (name, is_dir) in enumerate(entries):
             connector = "├── " if i < len(entries) - 1 else "└── "
