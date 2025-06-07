@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 
 import rich.console
 from langchain.schema import Document
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 
 from langdoc.domain.interfaces import VectorStore
@@ -94,7 +94,6 @@ class CodeVectorStore(VectorStore):
                 embedding=self.embeddings,
                 persist_directory=self.persist_directory,
             )
-            self.db.persist()
             self.console.print(
                 f"[green]Successfully indexed {len(documents)} documents[/green]",
             )
@@ -113,13 +112,13 @@ class CodeVectorStore(VectorStore):
     def retrieve_relevant_context(
         self, 
         query: str, 
-        num_documents: int = 5,
+        max_documents: int = 5,
     ) -> List[Dict[str, str]]:
         """Retrieve relevant context based on a query.
         
         Args:
             query: Query string to search for
-            num_documents: Number of documents to retrieve
+            max_documents: Maximum number of documents to retrieve
             
         Returns:
             List of relevant document dictionaries
@@ -132,7 +131,7 @@ class CodeVectorStore(VectorStore):
             return []
             
         # Perform similarity search
-        docs = self.db.similarity_search(query, k=num_documents)
+        docs = self.db.similarity_search(query, k=max_documents)
         
         # Format results
         results = []
