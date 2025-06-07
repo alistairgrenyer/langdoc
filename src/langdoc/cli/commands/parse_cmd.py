@@ -72,6 +72,6 @@ def parse(ctx: LangDocContext, repo_path: str, force_rebuild: bool):
         
         # Display database location
         echo_styled(f"Embeddings saved to: {collection_path}", "info")
-        echo_styled("You can now use 'langdoc ask' and 'langdoc readme --use-rag' with these embeddings.", "info")
+        echo_styled("You can now use 'langdoc ask' and 'langdoc readme' with these embeddings.", "info")
     else:
         echo_styled("❌ Failed to build vector store.", "error")
