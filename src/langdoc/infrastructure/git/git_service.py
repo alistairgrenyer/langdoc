@@ -28,20 +28,13 @@ class GitRepositoryService(GitRepository):
         Returns:
             Dictionary containing repository information
         """
-        info = {}
-        
-        # Check if the path is a Git repository
-        if not (repo_path / ".git").exists():
-            self.console.print("[yellow]Not a Git repository. Limited information available.[/yellow]")
-            return {"is_git_repo": "false"}
-            
-        info["is_git_repo"] = "true"
+        info = {"is_git_repo": "true"}
         
         try:
             # Get remote URL
             remote_url = self._run_git_command(
-                ["git", "config", "--get", "remote.origin.url"], 
-                repo_path
+                ["git", "config", "--get", "remote.origin.url"],
+                repo_path,
             )
             if remote_url:
                 info["remote_url"] = remote_url
@@ -57,16 +50,16 @@ class GitRepositoryService(GitRepository):
             
             # Get default branch
             default_branch = self._run_git_command(
-                ["git", "symbolic-ref", "--short", "HEAD"], 
-                repo_path
+                ["git", "symbolic-ref", "--short", "HEAD"],
+                repo_path,
             )
             if default_branch:
                 info["default_branch"] = default_branch
                 
             # Get last commit info
             last_commit = self._run_git_command(
-                ["git", "log", "-1", "--pretty=format:%h|%an|%ae|%s"], 
-                repo_path
+                ["git", "log", "-1", "--pretty=format:%h|%an|%ae|%s"],
+                repo_path,
             )
             if last_commit:
                 parts = last_commit.split("|")
@@ -78,8 +71,8 @@ class GitRepositoryService(GitRepository):
                     
             # Check for tags
             tags = self._run_git_command(
-                ["git", "tag", "--sort=-creatordate"], 
-                repo_path
+                ["git", "tag", "--sort=-creatordate"],
+                repo_path,
             )
             if tags:
                 info["latest_tag"] = tags.splitlines()[0]
@@ -88,7 +81,9 @@ class GitRepositoryService(GitRepository):
                 info["has_tags"] = "false"
                 
         except Exception as e:
-            self.console.print(f"[yellow]Error extracting Git information:[/yellow] {str(e)}")
+            self.console.print(
+                f"[yellow]Error extracting Git information:[/yellow] {str(e)}"
+            )
             
         return info
         
@@ -105,14 +100,11 @@ class GitRepositoryService(GitRepository):
         Raises:
             subprocess.SubprocessError: If command fails
         """
-        try:
-            result = subprocess.run(
-                command,
-                cwd=str(cwd),
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            return result.stdout.strip()
-        except subprocess.SubprocessError:
-            return ""
+        result = subprocess.run(
+            command,
+            cwd=str(cwd),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return result.stdout.strip()

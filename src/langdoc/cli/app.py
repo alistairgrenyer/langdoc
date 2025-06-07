@@ -8,13 +8,19 @@ import rich.console
 import typer
 from typing_extensions import Annotated
 
-from langdoc.application.services import CodebaseAnalysisService, DocumentationGeneratorService
-from langdoc.cli.commands import GenerateReadmeCommand, IndexCodebaseCommand
+from langdoc.application.codebase_analysis_service import CodebaseAnalysisService
+from langdoc.application.documentation_generator_service import (
+    DocumentationGeneratorService,
+)
+from langdoc.cli.generate_readme_command import GenerateReadmeCommand
+from langdoc.cli.index_codebase_command import IndexCodebaseCommand
 from langdoc.domain.models import DocumentType
-from langdoc.infrastructure.embeddings.vector_store import CodeVectorStore
+from langdoc.infrastructure.embeddings.code_vector_store import CodeVectorStore
 from langdoc.infrastructure.filesystem.filesystem_service import FilesystemService
 from langdoc.infrastructure.git.git_service import GitRepositoryService
-from langdoc.infrastructure.llm.llm_service import LLMDocumentationService, ReadmeGenerationLLMService
+from langdoc.infrastructure.llm.readme_generator_service import (
+    ReadmeGenerationLLMService,
+)
 
 app = typer.Typer(
     name="langdoc",
@@ -116,10 +122,9 @@ def readme(
             # Index codebase
             index_command = IndexCodebaseCommand(
                 vector_store=vector_store,
-                codebase_path=codebase_path,
                 console=console,
             )
-            index_command.execute()
+            index_command.execute(path=str(codebase_path))
         
         # Initialize LLM service
         llm_service = ReadmeGenerationLLMService(
@@ -146,11 +151,12 @@ def readme(
         command = GenerateReadmeCommand(
             analyzer=analyzer,
             generator=generator,
-            codebase_path=codebase_path,
-            output_path=output_path,
             console=console,
         )
-        readme_path = command.execute()
+        readme_path = command.execute(
+            path=str(codebase_path),
+            output=str(output_path) if output else None
+        )
         
         if not quiet:
             # Display success message

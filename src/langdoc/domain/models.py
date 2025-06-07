@@ -25,6 +25,7 @@ class CodebaseContext:
     has_cli: bool = False
     cli_commands: Optional[Dict[str, str]] = None
     has_tests: bool = False
+    git_info: Dict[str, str] = None
 
 
 @dataclass

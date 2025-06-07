@@ -67,15 +67,14 @@ class FilesystemService:
         ]
         exclude_patterns.extend(default_excludes)
         
-        # Read .gitignore for additional exclude patterns if it exists
+        # Read .gitignore for additional exclude patterns
         gitignore_path = project_path / ".gitignore"
-        if gitignore_path.exists():
-            with open(gitignore_path, "r", encoding="utf-8") as f:
-                gitignore_patterns = [
-                    line.strip() for line in f
-                    if line.strip() and not line.strip().startswith("#")
-                ]
-            exclude_patterns.extend(gitignore_patterns)
+        with open(gitignore_path, "r", encoding="utf-8") as f:
+            gitignore_patterns = [
+                line.strip() for line in f
+                if line.strip() and not line.strip().startswith("#")
+            ]
+        exclude_patterns.extend(gitignore_patterns)
             
         # Build structure dictionary
         structure: Dict[str, List[str]] = {}
