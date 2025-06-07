@@ -1,19 +1,16 @@
 # embedding.py
 """
-Embedding module for creating and managing code embeddings with persistent storage.
+Embedding module with core functionality for code embeddings.
 
-This module handles:
-1. Creating embeddings from parsed code
-2. Storing embeddings in SQLite with LangChain's Chroma
-3. Tracking repository metadata to ensure embedding relevance
-4. Providing retrieval capabilities for RAG-based functionality
+This module focuses on low-level embedding operations and vector store management.
+Higher-level operations and business logic are handled by EmbeddingService.
 """
 
 import os
 import json
 import hashlib
+import logging
 import platform
-# SQLite is used internally by Chroma
 from datetime import datetime
 from typing import List, Dict, Any
 import shutil
@@ -27,10 +24,11 @@ from langchain.docstore.document import Document
 
 load_dotenv()
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+# Set up module logger
+logger = logging.getLogger("langdoc.embedding")
 
-if not OPENAI_API_KEY:
-    print("Warning: OPENAI_API_KEY not found. Please set it in your .env file or environment variables.")
+# Get API key from environment
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 def get_repo_metadata(repo_path: str) -> Dict[str, str]:
@@ -95,18 +93,28 @@ def get_repo_metadata(repo_path: str) -> Dict[str, str]:
 
 class CodeEmbedder:
     """
-    Manages code embeddings with persistent SQLite storage through LangChain's Chroma.
+    Core embedding functionality for code repositories.
     
-    This class handles:
-    - Creating embeddings from parsed code files
-    - Storing embeddings in SQLite with metadata
-    - Loading embeddings based on repository identity
-    - Providing similarity search for RAG
+    This class focuses on the technical operations of embedding code:
+    - Document chunking and embedding using LangChain and OpenAI
+    - Vector store management with Chroma
+    - Repository metadata tracking
+    - Vector similarity search
+    
+    It provides a low-level API that should typically be used by higher-level
+    services rather than directly by user-facing commands.
     """
+    
+    # Define collection prefix for Chroma collections
+    COLLECTION_PREFIX = "langdoc_code_"
     # Storage configuration - follow platform conventions for cache directories
     @staticmethod
-    def _get_cache_dir():
-        """Get the appropriate cache directory based on the platform."""
+    def _get_cache_dir() -> str:
+        """Get the appropriate cache directory based on the platform.
+        
+        Returns:
+            Path to the cache directory based on the current operating system
+        """
         if platform.system() == "Windows":
             # On Windows, use %LOCALAPPDATA%\langdoc\cache\embeddings
             base_dir = os.environ.get("LOCALAPPDATA", os.path.expanduser("~"))
@@ -115,9 +123,11 @@ class CodeEmbedder:
             # On Linux/macOS, use ~/.cache/langdoc/embeddings
             return os.path.join(os.path.expanduser("~"), ".cache", "langdoc", "embeddings")
     
-    DB_DIR = _get_cache_dir()  # Get the cache directory at module load time
-    COLLECTION_PREFIX = "langdoc_"  # Prefix for Chroma collections
-    
+    # Static method to get the database directory path
+    @classmethod
+    def get_db_dir(cls):
+        """Get the database directory path."""
+        return cls._get_cache_dir()
     def __init__(self, model_name: str = "text-embedding-ada-002", chunk_size: int = 1000, 
                  chunk_overlap: int = 100, repo_path: str = "."):
         """Initialize the embedding system for the given repository.
@@ -127,33 +137,28 @@ class CodeEmbedder:
             chunk_size: Size of text chunks for embeddings
             chunk_overlap: Overlap between chunks
             repo_path: Path to the repository to work with
+        
+        Raises:
+            ValueError: If the OpenAI API key is not available
         """
-        # Ensure we have the API key
+        # Validate required API key
         if not OPENAI_API_KEY:
-            raise ValueError("OPENAI_API_KEY not found. Please set it in your environment variables or .env file.")
+            logger.error("OPENAI_API_KEY is required for embeddings")
+            raise ValueError("OPENAI_API_KEY environment variable must be set for embedding operations")
             
-        # Initialize embeddings model
-        self.embeddings_model = OpenAIEmbeddings(
-            model=model_name,
-            openai_api_key=OPENAI_API_KEY
-        )
-        
-        # Initialize text splitter for chunking
-        self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            separators=["\n\n", "\n", " ", ""]
-        )
-        
-        # Set up database path and collection name
+        self.model_name = model_name
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
         self.repo_path = os.path.abspath(repo_path)
+        
+        # Set up the database path
+        self.db_path = self._get_cache_dir()
+        os.makedirs(self.db_path, exist_ok=True)
+        
+        # Get repository metadata for tracking
         self.metadata = get_repo_metadata(self.repo_path)
         
-        # Make sure the database directory exists
-        os.makedirs(self.DB_DIR, exist_ok=True)
-        
-        # Use global storage location in user's home directory
-        self.db_path = self.DB_DIR
+        # Generate a collection name based on repo id
         self._collection_name = self._get_collection_name()
         
         # Initialize vector store (to be built or loaded)
@@ -230,7 +235,7 @@ class CodeEmbedder:
             True if successful, False otherwise
         """
         if not documents:
-            print("No documents to embed. Vector store not built.")
+            logger.info("No documents to embed. Vector store not built.")
             return False
             
         print(f"Building vector store with {len(documents)} documents...")
@@ -264,10 +269,10 @@ class CodeEmbedder:
                     "document_count": len(documents)
                 }, f, indent=2)
             
-            print(f"Vector store built and saved to {persist_directory}")
+            logger.info(f"Vector store built and saved to {persist_directory}")
             return True
         except Exception as e:
-            print(f"Error building vector store: {e}")
+            logger.info(f"Error building vector store: {e}")
             return False
             
     def load_vector_store(self, force: bool = False) -> bool:
@@ -284,7 +289,7 @@ class CodeEmbedder:
             
             # Check if the collection directory exists
             if not os.path.exists(persist_directory):
-                print(f"No vector store found at {persist_directory}")
+                logger.info(f"No vector store found at {persist_directory}")
                 return False
                 
             # Load existing index
@@ -309,27 +314,27 @@ class CodeEmbedder:
                         current_commit = self.metadata.get("commit_hash")
                         
                         if stored_commit and current_commit and stored_commit != current_commit:
-                            print("Warning: Repository has changed since embeddings were created.")
-                            print(f"Stored commit: {stored_commit}")
-                            print(f"Current commit: {current_commit}")
-                            print("Consider rebuilding the vector store for accuracy.")
+                            logger.info("Warning: Repository has changed since embeddings were created.")
+                            logger.info(f"Stored commit: {stored_commit}")
+                            logger.info(f"Current commit: {current_commit}")
+                            logger.info("Consider rebuilding the vector store for accuracy.")
                             # Just warn but continue loading
                         
                         # Verify repo path as additional check
                         saved_repo_path = stored_repo_meta.get("repo_path")
                         if saved_repo_path and saved_repo_path != self.repo_path:
-                            print("Warning: Vector store was created in a different location.")
-                            print(f"Current path: {self.repo_path}")
-                            print(f"Stored path: {saved_repo_path}")
+                            logger.info("Warning: Vector store was created in a different location.")
+                            logger.info(f"Current path: {self.repo_path}")
+                            logger.info(f"Stored path: {saved_repo_path}")
                             # Just warn but continue loading
                     
                 except Exception as e:
-                    print(f"Warning: Could not verify repository metadata: {e}")
+                    logger.info(f"Warning: Could not verify repository metadata: {e}")
             
-            print(f"Vector store loaded from {persist_directory}")
+            logger.info(f"Vector store loaded from {persist_directory}")
             return True
         except Exception as e:
-            print(f"Error loading Chroma vector store: {e}")
+            logger.info(f"Error loading Chroma vector store: {e}")
             self.vector_store = None
             return False
 
@@ -343,13 +348,13 @@ class CodeEmbedder:
             True if successful, False otherwise
         """
         if self.vector_store is None:
-            print("No vector store to save.")
+            logger.info("No vector store to save.")
             return False
         
         try:
             # For Chroma, we just need to call persist()
             self.vector_store.persist()
-            print(f"Vector store explicitly persisted to {self.db_path}")
+            logger.info(f"Vector store explicitly persisted to {self.db_path}")
             
             # Save metadata for easier inspection
             metadata_path = os.path.join(self.db_path, "metadata.json")
@@ -363,7 +368,7 @@ class CodeEmbedder:
                 
             return True
         except Exception as e:
-            print(f"Error persisting Chroma vector store: {e}")
+            logger.info(f"Error persisting Chroma vector store: {e}")
             return False
             
     def similarity_search(self, query: str, k: int = 5) -> List[Document]:
@@ -377,13 +382,13 @@ class CodeEmbedder:
             List of Document objects matching the query
         """
         if not self.vector_store:
-            print("Vector store not initialized. Cannot perform similarity search.")
+            logger.info("Vector store not initialized. Cannot perform similarity search.")
             return []
             
         try:
             return self.vector_store.similarity_search(query, k=k)
         except Exception as e:
-            print(f"Error during similarity search: {e}")
+            logger.info(f"Error during similarity search: {e}")
             return []
             
     @classmethod
@@ -401,18 +406,18 @@ class CodeEmbedder:
             metadata = get_repo_metadata(repo_path)
             repo_id = metadata.get("repo_id")
             
-            # Build the path to the database directory - now using global location
-            db_path = cls.DB_DIR
+            # Build the path to the database directory - now using static method
+            db_path = cls._get_cache_dir()
             collection_dir = os.path.join(db_path, f"{cls.COLLECTION_PREFIX}{repo_id}")
             
             if os.path.exists(collection_dir):
-                print(f"Removing embeddings at {collection_dir}")
+                logger.info(f"Removing embeddings at {collection_dir}")
                 shutil.rmtree(collection_dir, ignore_errors=True)
-                print("Embeddings cleared successfully.")
+                logger.info("Embeddings cleared successfully.")
                 return True
             else:
-                print(f"No embeddings found for repository at {collection_dir}")
+                logger.info(f"No embeddings found for repository at {collection_dir}")
                 return False
         except Exception as e:
-            print(f"Error clearing embeddings: {e}")
+            logger.info(f"Error clearing embeddings: {e}")
             return False
